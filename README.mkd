@@ -1,4 +1,4 @@
-# True Review
+# True Review (Don't attempt set up quite yet, there will be a lot of issues)
 ---
 
   TrueReview is a minimalist movie review and social networking platform that combines film critique with community engagement. Users can search for movies, rate them on a precise 0.0-10.0 scale, write detailed reviews, and curate their personal watched list with powerful filtering capabilities. The platform features a distinctive black-and-white aesthetic with industrial grid overlays, creating a professional environment focused on authentic film analysis rather than flashy visuals. Each user profile displays comprehensive statistics including total movies watched, average rating, 10/10 ratings, follower/following counts, and a unique "Popcorn Kernels" reward system that gamifies the reviewing experience.
