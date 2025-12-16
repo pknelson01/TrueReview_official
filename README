@@ -1,36 +1,40 @@
-Michaels App Idea (True Review...?):
-    - Big Movie Database
-    - Review is blurred, won't be un-blurred until you have seen the film foryourself and left your own review
-    - Social Media-ish (Following Feed, what your friends are watching and friend recommendations)
-    - Film Verification, validate that you did indeed watch the film so you are allowed to review the film based on your genuine, bias free, opinion.
-    - Badge System
-    - Movie Poster, date & time, photo attachment (group you watched with or movie ticket), secondary reviews after the hype is over
-    - Snap Score type of feature
-    - Titles for certain events (i.e. "May the Force be with you." for watching star wars opening night)
-    - Link to streaming services and a "To be reviewed..." feature where episodes you watched go to a queue where you review
+# True Review
+---
 
 
-TELL US ABOUT YOURSELF (Gather more data on the user for ML purposes)
 
-Business ID's
 
-To-Do List:
 
-Create simple HTML Page with login page to then home page with different buttons that will query the database and display the results.
+## Setup Instructions:
 
-add more to the users table:
-    favorite movie
-    profile picture
+node(v24.11.1)
+npm(11.7.0)
 
-add a search and add movie button
-make it update when you make an update
-
-Features not offered on other apps:
-
-    - make a function that allows you to go to a friend (both parties follow eachother) and view all movies that both parties have seen. 
-      - Maybe also movies that you haven't seen that they have seen. 
-        - Maybe a universal toggle that dims posters you have seen 
-
-Add a toggle on the search bar that lets you search users instead so you can follow. 
-
-Add a "Snap Score" type of feature
+1. Click on the <> Code dropdown
+    - Select "Download Zip"
+2. Create a folder on your desktop titled TrueReview (exactly as shown).
+3. Double click the zip in your browsers downloads
+4. Find the folder in your downloads folder and move to your new folder on the desktop
+5. Open your terminal
+    - If on mac 
+        - (cmd + space) and type in terminal.app and press enter
+    - If on windows
+        - Press the *Windows Key* and type either Command Prompt or PowerShell and press enter. 
+6. Copy and paste the following Command
+    - cd desktop/TrueReview
+7. Copy and paste the following Command
+    - curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+8. Close the terminal and reopen. Then copy and paste the following
+    - cd desktop/TrueReview
+9. Run the following Command
+    - nvm install 24.11.1
+10. run the following Command
+    - nvm use 24.11.1
+11. Verify you are using the correct versions (below "Setup Instructions:") with
+    - node -v
+    - npm -v
+12. Run the following Command
+    - npm start
+13. Open up Google Chrome and type the following
+    - localhost:3000
+14. You are now good to create an account and use TrueReview
