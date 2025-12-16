@@ -393,16 +393,152 @@
             letter-spacing: 3px;
         }
 
+        .watchlist-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--white);
+            border: 2px solid var(--charcoal);
+            color: var(--charcoal);
+            padding: 6px 12px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 20;
+            opacity: 0;
+        }
+
+        .watchlist-btn:hover {
+            background: var(--charcoal);
+            color: var(--white);
+        }
+
+        .watchlist-btn.in-watchlist {
+            background: #2ecc71;
+            border-color: #27ae60;
+            color: var(--white);
+        }
+
+        .watchlist-btn.in-watchlist:hover {
+            background: #27ae60;
+            border-color: #229954;
+        }
+
+        .movie-card:hover .watchlist-btn {
+            opacity: 1;
+        }
+
         .no-results {
             text-align: center;
             color: var(--steel);
             font-size: 18px;
             padding: 60px 20px;
         }
+
+        /* Custom Confirmation Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--charcoal);
+            border: 3px solid var(--white);
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+
+        .modal-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--white);
+            padding-bottom: 15px;
+        }
+
+        .modal-message {
+            font-family: 'Anonymous Pro', monospace;
+            font-size: 16px;
+            color: var(--off-white);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .modal-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .modal-btn {
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 15px;
+            border: 2px solid var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-yes {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .modal-btn-yes:hover {
+            background: transparent;
+            color: var(--white);
+        }
+
+        .modal-btn-no {
+            background: transparent;
+            color: var(--white);
+        }
+
+        .modal-btn-no:hover {
+            background: var(--white);
+            color: var(--charcoal);
+        }
     </style>
 </head>
 <body>
     <div class="grid-overlay"></div>
+
+    <!-- Custom Confirmation Modal -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-box">
+            <div class="modal-title">Confirm Action</div>
+            <div class="modal-message">
+                Are you sure? This will delete your entry and review.
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" id="modal-yes">Yes, I'm Sure</button>
+                <button class="modal-btn modal-btn-no" id="modal-no">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <div class="header-container">
         <div class="header-bar">
@@ -426,7 +562,7 @@
         <div class="tab-bar">
             <span class="tab">FOLLOWING (coming soon...)</span>
             <a href="/watched" class="tab">WATCHED</a>
-            <span class="tab">WATCHLIST (coming soon...)</span>
+            <a href="/watchlist" class="tab">WATCHLIST</a>
             <span class="tab">TOP-N (coming soon...)</span>
             <a href="/dashboard" class="tab" id="dashboard-tab"></a>
         </div>

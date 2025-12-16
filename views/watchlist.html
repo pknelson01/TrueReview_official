@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrueReview - Edit Profile</title>
+    <title>TrueReview - Your Watchlist</title>
     <link rel="icon" href="../TrueReview_logo/Icon_BW.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -15,16 +14,17 @@
         }
 
         :root {
-            --truereview: #525252;
+            --concrete: #525252;
             --steel: #A8A8A8;
             --white: #FFFFFF;
             --charcoal: #2B2B2B;
             --off-white: #E8E8E8;
+            --priority-red: #C41E3A;
         }
 
         body {
             font-family: 'Anonymous Pro', monospace;
-            background: var(--truereview);
+            background: var(--concrete);
             color: var(--off-white);
             line-height: 1.5;
             position: relative;
@@ -211,6 +211,11 @@
             text-decoration: none;
         }
 
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+        }
+
         .tab.active {
             background: var(--white);
             color: var(--charcoal);
@@ -226,166 +231,264 @@
             background: var(--white);
         }
 
-        .tab:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: var(--white);
-        }
-
-        .main-content {
-            padding: 60px;
-        }
-
-        .profile-section {
+        .watchlist-container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 25px auto;
+            padding: 0;
             background: var(--charcoal);
             border: 2px solid var(--white);
-            padding: 0;
-            max-width: 1400px;
-            margin: 0 auto;
         }
 
-        .profile-header {
-            background: var(--white);
-            padding: 30px;
-            border-bottom: 2px solid var(--charcoal);
-            position: relative;
-        }
-
-        .profile-label {
-            font-family: 'Oswald', sans-serif;
-            font-size: 14px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: var(--charcoal);
-            font-weight: 600;
-        }
-
-        .profile-body {
-            padding: 40px;
-        }
-
-        .profile-picture-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 30px;
-        }
-
-        .profile-picture {
-            width: 200px;
-            height: 200px;
-            border: 3px solid var(--white);
-            background: var(--steel);
-            display: flex;
+        .watchlist-header {
+            padding: 18px;
+            border-bottom: 2px solid var(--white);
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
             align-items: center;
-            justify-content: center;
+            background: var(--charcoal);
+        }
+
+        .watchlist-title {
             font-family: 'Oswald', sans-serif;
-            font-size: 72px;
+            font-size: 22px;
             font-weight: 700;
-            color: var(--charcoal);
+            color: var(--off-white);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+        }
+
+        .total-entries {
+            font-size: 10px;
+            color: var(--white);
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .filter-section {
+            display: flex;
+            justify-content: flex-end;
             position: relative;
+        }
+
+        .filter-btn {
+            background: transparent;
+            border: 1px solid var(--white);
+            color: var(--white);
+            padding: 6px 12px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .filter-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: var(--charcoal);
+            border: 2px solid var(--white);
+            min-width: 200px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .filter-dropdown.active {
+            display: block;
+        }
+
+        .filter-option {
+            padding: 10px 15px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            color: var(--white);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .filter-option:last-child {
+            border-bottom: none;
+        }
+
+        .filter-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-option.active {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .watchlist-body {
+            padding: 18px;
+        }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .movie-card {
+            position: relative;
+            aspect-ratio: 2/3;
+            background: var(--charcoal);
+            border: 2px solid var(--white);
             cursor: pointer;
             overflow: hidden;
+            transition: all 0.3s ease;
+            text-decoration: none;
         }
 
-        .profile-picture img {
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+        }
+
+        .poster-wrapper {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .movie-poster {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: opacity 0.3s ease;
+            background: url('/TrueReview_logo/Poster_BW.png');
+            background-size: cover;
+            background-position: center;
         }
 
-        .edit-overlay {
+        .movie-card:hover .movie-poster {
+            opacity: 0.75;
+        }
+
+        .priority-badge {
             position: absolute;
-            bottom: 0;
+            top: 0;
             left: 0;
             right: 0;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            text-align: center;
+            background: var(--priority-red);
             color: var(--white);
-            font-size: 18px;
-        }
-
-        .form-group {
-            margin-bottom: 30px;
-        }
-
-        .form-label {
+            padding: 6px 8px;
             font-family: 'Oswald', sans-serif;
-            font-size: 12px;
+            font-size: 10px;
+            font-weight: 700;
             letter-spacing: 2px;
+            text-align: center;
             text-transform: uppercase;
-            color: var(--steel);
-            display: block;
-            margin-bottom: 10px;
+            z-index: 5;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
         }
 
-        .form-input,
-        .form-textarea,
-        .form-select {
-            width: 100%;
-            font-family: 'Anonymous Pro', monospace;
-            background: rgba(0, 0, 0, 0.3);
+        .priority-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: var(--charcoal);
             border: 2px solid var(--steel);
-            color: var(--off-white);
-            padding: 15px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .form-input:focus,
-        .form-textarea:focus,
-        .form-select:focus {
-            outline: none;
-            border-color: var(--white);
-            background: rgba(0, 0, 0, 0.5);
-        }
-
-        .form-textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 20px;
-            margin-top: 40px;
-        }
-
-        .save-btn,
-        .cancel-btn {
-            flex: 1;
-            font-family: 'Oswald', sans-serif;
-            font-size: 16px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            padding: 18px;
-            border: 2px solid var(--white);
+            color: var(--steel);
+            border-radius: 50%;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-decoration: none;
+            z-index: 10;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .priority-btn:hover {
+            background: var(--steel);
+            color: var(--charcoal);
+            border-color: var(--white);
+            transform: scale(1.1);
+        }
+
+        .priority-btn.active {
+            background: var(--priority-red);
+            border-color: var(--priority-red);
+            color: var(--white);
+        }
+
+        .priority-btn.active:hover {
+            background: #a01828;
+            border-color: #a01828;
+        }
+
+        .movie-card:hover .priority-btn {
+            opacity: 1;
+        }
+
+        .hover-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(43, 43, 43, 0.75);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .movie-card:hover .hover-overlay {
+            opacity: 1;
+        }
+
+        .movie-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--off-white);
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            margin-bottom: 15px;
+        }
+
+        .watchlist-entry-number {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 18px;
+            color: var(--white);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .movie-card:hover .watchlist-entry-number {
+            opacity: 1;
+        }
+
+        .empty-text, .empty-msg {
             text-align: center;
-            display: block;
-        }
-
-        .save-btn {
-            background: var(--white);
-            color: var(--charcoal);
-        }
-
-        .save-btn:hover {
-            background: transparent;
-            color: var(--white);
-            transform: translateY(-2px);
-        }
-
-        .cancel-btn {
-            background: transparent;
-            color: var(--white);
-        }
-
-        .cancel-btn:hover {
-            background: var(--white);
-            color: var(--charcoal);
-            transform: translateY(-2px);
+            color: var(--steel);
+            font-size: 18px;
+            padding: 60px 20px;
+            grid-column: 1 / -1;
         }
     </style>
 </head>
@@ -402,7 +505,6 @@
                 <div class="header-search">
                     <a href="/add-movie" class="search-btn">Search</a>
                 </div>
-                <!-- <div class="status-text">SYSTEM: ONLINE</div> -->
             </div>
             <div class="status-section">
                 <form action="/logout" method="POST">
@@ -414,133 +516,60 @@
         <div class="tab-bar">
             <span class="tab">FOLLOWING (coming soon...)</span>
             <a href="/watched" class="tab">WATCHED</a>
-            <a href="/watchlist" class="tab">WATCHLIST</a>
+            <a href="/watchlist" class="tab active">WATCHLIST</a>
             <span class="tab">TOP-N (coming soon...)</span>
             <a href="/dashboard" class="tab" id="dashboard-tab"></a>
         </div>
     </div>
 
-    <div class="main-content">
-        <div class="profile-section">
-            <div class="profile-header">
-                <div class="profile-label">Edit Profile</div>
+    <div class="container" style="padding: 25px;">
+        <div class="watchlist-container">
+            <div class="watchlist-header">
+                <h1 class="watchlist-title">Watchlist</h1>
+                <div class="total-entries" id="total-entries">TOTAL ENTRIES: 0</div>
+                <div class="filter-section">
+                    <button class="filter-btn" id="filter-btn">FILTER</button>
+                    <div class="filter-dropdown" id="filter-dropdown">
+                        <div class="filter-option active" data-filter="priority-desc">PRIORITY (HIGH→LOW)</div>
+                        <div class="filter-option" data-filter="priority-high">HIGH PRIORITY ONLY</div>
+                        <div class="filter-option" data-filter="activity-desc">MY ACTIVITY (LAST→FIRST)</div>
+                        <div class="filter-option" data-filter="activity-asc">MY ACTIVITY (FIRST→LAST)</div>
+                        <div class="filter-option" data-filter="year-desc">YEAR (NEWEST→OLDEST)</div>
+                        <div class="filter-option" data-filter="year-asc">YEAR (OLDEST→NEWEST)</div>
+                        <div class="filter-option" data-filter="alpha-asc">ALPHABETICAL (A→Z)</div>
+                        <div class="filter-option" data-filter="alpha-desc">ALPHABETICAL (Z→A)</div>
+                    </div>
+                </div>
             </div>
-            <div class="profile-body">
-                <div class="profile-picture-container">
-                    <div class="profile-picture" onclick="triggerFileInput('pfp-input'); event.stopPropagation();">
-                        <span id="profile-initials"></span>
-                        <img id="profile-pic" style="display:none;" />
-                        <div class="edit-overlay">
-                            <i class="fa-solid fa-pencil"></i>
-                        </div>
-                    </div>
-                    <input id="pfp-input" type="file" accept="image/*" style="display:none;">
-                </div>
 
-                <form id="edit-form" action="/update-profile" method="POST">
-                    <div class="form-group">
-                        <label class="form-label" for="username">Username</label>
-                        <input type="text" id="username" name="username" class="form-input" required>
-                    </div>
+            <div class="watchlist-body">
+                <div id="movies-grid" class="movies-grid"></div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="title">Title</label>
-                        <input type="text" id="title" name="title" class="form-input" placeholder="e.g. Film Enthusiast">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="bio">Bio</label>
-                        <textarea id="bio" name="bio" class="form-textarea" placeholder="Tell us about yourself..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="favorite_movie">Favorite Movie</label>
-                        <select id="favorite_movie" name="favorite_movie" class="form-select">
-                            <option value="">Select a favorite movie</option>
-                        </select>
-                    </div>
-
-                    <div class="button-group">
-                        <button type="submit" class="save-btn">Save Changes</button>
-                        <a href="/dashboard" class="cancel-btn">Cancel</a>
-                    </div>
-                </form>
-
-                <div class="button-group" style="margin-top: 20px;">
-                    <a href="/change-password" class="cancel-btn">Change Password</a>
-                </div>
+                <p id="empty-message" class="empty-text" style="display:none;">
+                    You haven't added any movies to your watchlist yet!
+                </p>
             </div>
         </div>
     </div>
 
+    <script src="/public/js/watchlist.js"></script>
     <script>
-        function triggerFileInput(id) {
-            document.getElementById(id).click();
-        }
-
-        // Upload new profile picture
-        document.getElementById("pfp-input").addEventListener("change", async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append("file", file);
-
-            const res = await fetch("/api/upload/profile-picture", {
-                method: "POST",
-                body: formData
-            });
-
-            if (res.ok) {
+        // Update dashboard tab with username
+        async function updateDashboardTab() {
+            try {
+                const res = await fetch("/api/user/username");
                 const data = await res.json();
-                const img = document.getElementById("profile-pic");
-                img.src = `/uploads/profile_pictures/${data.filename}`;
-                img.style.display = "block";
-                document.getElementById("profile-initials").style.display = "none";
+                document.getElementById("dashboard-tab").textContent = data.username.toUpperCase();
+            } catch (err) {
+                console.error("Error loading username:", err);
             }
-        });
-
-        // Load current profile data
-        async function loadProfile() {
-            const res = await fetch("/api/dashboard");
-            const data = await res.json();
-
-            // Set profile picture
-            if (data.user.profile_picture) {
-                const img = document.getElementById("profile-pic");
-                img.src = `/uploads/profile_pictures/${data.user.profile_picture}`;
-                img.style.display = "block";
-                document.getElementById("profile-initials").style.display = "none";
-            } else {
-                const initials = data.user.username.substring(0, 2).toUpperCase();
-                document.getElementById("profile-initials").textContent = initials;
-            }
-
-            // Set form values
-            document.getElementById("username").value = data.user.username || "";
-            document.getElementById("title").value = data.user.title || "";
-            document.getElementById("bio").value = data.user.bio || "";
-
-            // Update dashboard tab with username
-            document.getElementById("dashboard-tab").textContent = data.user.username.toUpperCase();
-
-            // Load watched movies for favorite selection
-            const watchedRes = await fetch("/api/watched");
-            const movies = await watchedRes.json();
-
-            const select = document.getElementById("favorite_movie");
-            movies.forEach(movie => {
-                const option = document.createElement("option");
-                option.value = movie.movie_id;
-                option.textContent = movie.movie_title;
-                if (data.user.favorite_movie && data.user.favorite_movie == movie.movie_id) {
-                    option.selected = true;
-                }
-                select.appendChild(option);
-            });
         }
+        updateDashboardTab();
 
-        loadProfile();
+        // Clear sessionStorage on logout
+        document.querySelector('form[action="/logout"]').addEventListener('submit', () => {
+            sessionStorage.clear();
+        });
     </script>
 </body>
 </html>

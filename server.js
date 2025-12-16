@@ -102,6 +102,211 @@ function isValidEmail(email) {
   return email && email.includes("@") && email.includes(".com");
 }
 
+// ----------------------------------------------------
+// Helper Function: Ensure Movie Exists in Database
+// ----------------------------------------------------
+// Helper function to check if titles are significantly different
+function titlesDifferSignificantly(title1, title2) {
+  if (!title1 || !title2) return false;
+
+  // Normalize titles: lowercase, remove punctuation, split into words
+  const normalize = (str) => str.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 0);
+  const words1 = normalize(title1);
+  const words2 = normalize(title2);
+
+  // Calculate word overlap
+  const set1 = new Set(words1);
+  const set2 = new Set(words2);
+  const intersection = new Set([...set1].filter(w => set2.has(w)));
+  const union = new Set([...set1, ...set2]);
+
+  // Jaccard similarity: intersection / union
+  const similarity = intersection.size / union.size;
+
+  // Consider significantly different if less than 50% overlap
+  return similarity < 0.5;
+}
+
+async function ensureMovieInDatabase(movie_id) {
+  try {
+    // Check if movie already exists
+    const checkSql = `SELECT movie_id, movie_title, movie_release_date FROM all_movies WHERE movie_id = $1`;
+    const existing = await db.query(checkSql, [movie_id]);
+
+    const movieExists = existing.rows.length > 0;
+    const oldTitle = movieExists ? existing.rows[0].movie_title : null;
+    const oldReleaseDate = movieExists ? existing.rows[0].movie_release_date : null;
+
+    if (movieExists) {
+      console.log(`[MOVIE DB] Movie ${movie_id} exists in database (${oldTitle}), will fetch fresh TMDB data...`);
+    } else {
+      console.log(`[MOVIE DB] Movie ${movie_id} not found, fetching from TMDB...`);
+    }
+
+    // Always fetch fresh movie details from TMDB
+    const movieUrl = `https://api.themoviedb.org/3/movie/${movie_id}?api_key=${TMDB_API_KEY}`;
+    const movieResponse = await fetch(movieUrl);
+
+    if (!movieResponse.ok) {
+      console.error(`[MOVIE DB] Failed to fetch movie ${movie_id} from TMDB - Status: ${movieResponse.status}`);
+      // If movie exists in DB and TMDB fails, keep existing data
+      if (movieExists) {
+        console.log(`[MOVIE DB] Keeping existing data for movie ${movie_id}`);
+        return true;
+      }
+      return false;
+    }
+
+    const movieData = await movieResponse.json();
+    console.log(`[MOVIE DB] Received movie data from TMDB: ${movieData.title}`);
+
+    // Check if this is a TMDB ID reuse (invalid movie replaced with new movie)
+    if (movieExists) {
+      const newTitle = movieData.title;
+      const newReleaseDate = movieData.release_date;
+
+      // Check if title changed significantly
+      const titleChanged = titlesDifferSignificantly(oldTitle, newTitle);
+
+      // Check if release year changed by more than 1 year
+      let yearChanged = false;
+      if (oldReleaseDate && newReleaseDate) {
+        const oldYear = new Date(oldReleaseDate).getFullYear();
+        const newYear = new Date(newReleaseDate).getFullYear();
+        yearChanged = Math.abs(oldYear - newYear) > 1;
+      }
+
+      // If both title and year changed significantly, TMDB likely reused the ID
+      if (titleChanged && yearChanged) {
+        console.log(`[MOVIE DB] ⚠️  TMDB ID REUSE DETECTED for ${movie_id}!`);
+        console.log(`[MOVIE DB] Old: "${oldTitle}" (${oldReleaseDate})`);
+        console.log(`[MOVIE DB] New: "${newTitle}" (${newReleaseDate})`);
+        console.log(`[MOVIE DB] Deleting old movie from all users' lists...`);
+
+        // Delete from all tables (this will cascade to watched_list and watch_list if foreign keys are set)
+        await db.query('DELETE FROM watched_list WHERE movie_id = $1', [movie_id]);
+        await db.query('DELETE FROM watch_list WHERE movie_id = $1', [movie_id]);
+        await db.query('DELETE FROM all_movies WHERE movie_id = $1', [movie_id]);
+
+        console.log(`[MOVIE DB] Old movie deleted. Inserting new movie data...`);
+      }
+    }
+
+    // Fetch release dates for MPAA rating (US certification)
+    const releasesUrl = `https://api.themoviedb.org/3/movie/${movie_id}/release_dates?api_key=${TMDB_API_KEY}`;
+    const releasesResponse = await fetch(releasesUrl);
+    let mpaaRating = null;
+
+    if (releasesResponse.ok) {
+      const releasesData = await releasesResponse.json();
+      const usRelease = releasesData.results.find(r => r.iso_3166_1 === 'US');
+      if (usRelease && usRelease.release_dates && usRelease.release_dates.length > 0) {
+        mpaaRating = usRelease.release_dates[0].certification || null;
+      }
+    }
+
+    // Extract and format data
+    const posterPath = movieData.poster_path || null;
+    const posterFullUrl = posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : null;
+    const runtime = movieData.runtime ?? 0; // Use 0 if null/undefined (0 is valid for unreleased movies)
+    const language = movieData.original_language || null;
+    const releaseDate = movieData.release_date || null;
+    const adult = movieData.adult ? 1 : 0;
+    const overview = movieData.overview || null;
+
+    // Extract up to 10 genre IDs
+    const genreIds = movieData.genres ? movieData.genres.map(g => g.id) : [];
+    const genre_01 = genreIds[0] || null;
+    const genre_02 = genreIds[1] || null;
+    const genre_03 = genreIds[2] || null;
+    const genre_04 = genreIds[3] || null;
+    const genre_05 = genreIds[4] || null;
+    const genre_06 = genreIds[5] || null;
+    const genre_07 = genreIds[6] || null;
+    const genre_08 = genreIds[7] || null;
+    const genre_09 = genreIds[8] || null;
+    const genre_10 = genreIds[9] || null;
+
+    // Insert or update in all_movies
+    const upsertSql = `
+      INSERT INTO all_movies (
+        movie_id, movie_title, movie_runtime, mpaa_rating, movie_language, movie_release_date,
+        poster_path, poster_full_url, adult_01, movie_overview,
+        genre_01, genre_02, genre_03, genre_04, genre_05,
+        genre_06, genre_07, genre_08, genre_09, genre_10
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+      ON CONFLICT (movie_id) DO UPDATE SET
+        movie_title = EXCLUDED.movie_title,
+        movie_runtime = EXCLUDED.movie_runtime,
+        mpaa_rating = EXCLUDED.mpaa_rating,
+        movie_language = EXCLUDED.movie_language,
+        movie_release_date = EXCLUDED.movie_release_date,
+        poster_path = EXCLUDED.poster_path,
+        poster_full_url = EXCLUDED.poster_full_url,
+        adult_01 = EXCLUDED.adult_01,
+        movie_overview = EXCLUDED.movie_overview,
+        genre_01 = EXCLUDED.genre_01,
+        genre_02 = EXCLUDED.genre_02,
+        genre_03 = EXCLUDED.genre_03,
+        genre_04 = EXCLUDED.genre_04,
+        genre_05 = EXCLUDED.genre_05,
+        genre_06 = EXCLUDED.genre_06,
+        genre_07 = EXCLUDED.genre_07,
+        genre_08 = EXCLUDED.genre_08,
+        genre_09 = EXCLUDED.genre_09,
+        genre_10 = EXCLUDED.genre_10
+    `;
+
+    await db.query(upsertSql, [
+      movieData.id,
+      movieData.title,
+      runtime,
+      mpaaRating,
+      language,
+      releaseDate,
+      posterPath,
+      posterFullUrl,
+      adult,
+      overview,
+      genre_01,
+      genre_02,
+      genre_03,
+      genre_04,
+      genre_05,
+      genre_06,
+      genre_07,
+      genre_08,
+      genre_09,
+      genre_10
+    ]);
+
+    // Determine if this was an ID reuse scenario
+    const wasIdReuse = movieExists && titlesDifferSignificantly(oldTitle, movieData.title) &&
+                       oldReleaseDate && movieData.release_date &&
+                       Math.abs(new Date(oldReleaseDate).getFullYear() - new Date(movieData.release_date).getFullYear()) > 1;
+
+    if (wasIdReuse) {
+      console.log(`[MOVIE DB] ✅ Movie ${movie_id} (${movieData.title}) successfully added after ID reuse cleanup`);
+    } else if (movieExists && oldTitle !== movieData.title) {
+      console.log(`[MOVIE DB] Movie ${movie_id} UPDATED: "${oldTitle}" → "${movieData.title}"`);
+    } else if (movieExists) {
+      console.log(`[MOVIE DB] Movie ${movie_id} (${movieData.title}) refreshed with latest data`);
+    } else {
+      console.log(`[MOVIE DB] Movie ${movie_id} (${movieData.title}) successfully added to database`);
+    }
+
+    const genreIdsStr = genreIds.length > 0 ? genreIds.join(', ') : 'None';
+    console.log(`[MOVIE DB] Details - Genres: [${genreIdsStr}], Runtime: ${runtime}, MPAA: ${mpaaRating}, Language: ${language}`);
+    return true;
+
+  } catch (error) {
+    console.error(`[MOVIE DB] Error ensuring movie ${movie_id} in database:`, error);
+    console.error(`[MOVIE DB] Error stack:`, error.stack);
+    return false;
+  }
+}
+
 // ============================================================================
 // ROUTES — HTML PAGES
 // ============================================================================
@@ -211,6 +416,10 @@ app.get("/dashboard", requireLogin, (req, res) => {
 
 app.get("/watched", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "views/watched.html"));
+});
+
+app.get("/watchlist", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "views/watchlist.html"));
 });
 
 app.get("/edit-profile", requireLogin, (req, res) => {
@@ -363,7 +572,7 @@ app.get("/api/watched/:watched_id", requireLogin, async (req, res) => {
 
   const sql = `
     SELECT wl.watched_id, wl.user_rating, wl.review,
-           am.movie_title, am.poster_full_url, am.movie_release_date
+           am.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
     FROM watched_list wl
     JOIN all_movies am ON wl.movie_id = am.movie_id
     WHERE wl.user_id = $1 AND wl.watched_id = $2
@@ -382,6 +591,221 @@ app.get("/api/watched/:watched_id", requireLogin, async (req, res) => {
     ...data,
     releaseYear: releaseDate.getFullYear()
   });
+});
+
+// ============================================================================
+// API — WATCHLIST DATA
+// ============================================================================
+app.get("/api/watchlist", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+
+  const sql = `
+    SELECT wl.watch_list_id, wl.priority_01, wl.notes, wl.added_date,
+           am.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
+    FROM watch_list wl
+    JOIN all_movies am ON wl.movie_id = am.movie_id
+    WHERE wl.user_id = $1
+    ORDER BY wl.added_date DESC
+  `;
+
+  const result = await db.query(sql, [user_id]);
+  res.json(result.rows);
+});
+
+// Add movie to watchlist
+app.post("/api/watchlist/add", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { movie_id, priority_01, notes } = req.body;
+
+  if (!movie_id) {
+    return res.status(400).json({ error: "movie_id is required" });
+  }
+
+  try {
+    // Ensure movie exists in all_movies table
+    const movieAdded = await ensureMovieInDatabase(movie_id);
+    if (!movieAdded) {
+      return res.status(500).json({ error: "Failed to fetch movie data" });
+    }
+
+    // Check if movie already exists in watchlist
+    const checkSql = `
+      SELECT watch_list_id FROM watch_list
+      WHERE user_id = $1 AND movie_id = $2
+    `;
+    const existing = await db.query(checkSql, [user_id, movie_id]);
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: "Movie already in watchlist" });
+    }
+
+    // Add to watchlist
+    const insertSql = `
+      INSERT INTO watch_list (user_id, movie_id, priority_01, notes)
+      VALUES ($1, $2, $3, $4)
+      RETURNING watch_list_id
+    `;
+    const result = await db.query(insertSql, [
+      user_id,
+      movie_id,
+      priority_01 || 0,
+      notes || null
+    ]);
+
+    res.json({
+      success: true,
+      watch_list_id: result.rows[0].watch_list_id
+    });
+  } catch (err) {
+    console.error("Error adding to watchlist:", err);
+    res.status(500).json({ error: "Failed to add to watchlist" });
+  }
+});
+
+// Move movie from watched list to watchlist
+app.post("/api/watchlist/move-from-watched", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { watched_id, movie_id } = req.body;
+
+  console.log("[MOVE TO WATCHLIST] Request received:", { user_id, watched_id, movie_id });
+
+  if (!watched_id || !movie_id) {
+    console.log("[MOVE TO WATCHLIST] Missing parameters");
+    return res.status(400).json({ error: "watched_id and movie_id are required" });
+  }
+
+  try {
+    // Start a transaction
+    await db.query("BEGIN");
+    console.log("[MOVE TO WATCHLIST] Transaction started");
+
+    // First, get the watched entry to check if it has a review
+    const getEntrySql = `
+      SELECT review FROM watched_list
+      WHERE watched_id = $1 AND user_id = $2
+    `;
+    const entryResult = await db.query(getEntrySql, [watched_id, user_id]);
+
+    if (entryResult.rows.length === 0) {
+      await db.query("ROLLBACK");
+      console.log("[MOVE TO WATCHLIST] No entry found, rolling back");
+      return res.status(404).json({ error: "Watched entry not found" });
+    }
+
+    const hasReview = entryResult.rows[0].review && entryResult.rows[0].review.trim() !== '';
+    const pointsToSubtract = hasReview ? 6 : 1;
+    console.log("[MOVE TO WATCHLIST] Has review:", hasReview, "Points to subtract:", pointsToSubtract);
+
+    // Delete from watched_list
+    const deleteSql = `
+      DELETE FROM watched_list
+      WHERE watched_id = $1 AND user_id = $2
+    `;
+    console.log("[MOVE TO WATCHLIST] Deleting from watched_list:", { watched_id, user_id });
+    const deleteResult = await db.query(deleteSql, [watched_id, user_id]);
+    console.log("[MOVE TO WATCHLIST] Delete result:", deleteResult.rowCount, "rows deleted");
+
+    // Update popcorn_kernels
+    const updateKernelsSql = `
+      UPDATE users
+      SET popcorn_kernels = GREATEST(0, popcorn_kernels - $1)
+      WHERE user_id = $2
+    `;
+    await db.query(updateKernelsSql, [pointsToSubtract, user_id]);
+    console.log("[MOVE TO WATCHLIST] Updated popcorn_kernels, subtracted:", pointsToSubtract);
+
+    // Check if movie already exists in watchlist
+    const checkSql = `
+      SELECT watch_list_id FROM watch_list
+      WHERE user_id = $1 AND movie_id = $2
+    `;
+    const existing = await db.query(checkSql, [user_id, movie_id]);
+    console.log("[MOVE TO WATCHLIST] Existing watchlist entries:", existing.rows.length);
+
+    if (existing.rows.length === 0) {
+      // Add to watchlist
+      const insertSql = `
+        INSERT INTO watch_list (user_id, movie_id, priority_01)
+        VALUES ($1, $2, 0)
+        RETURNING watch_list_id
+      `;
+      console.log("[MOVE TO WATCHLIST] Adding to watchlist");
+      const insertResult = await db.query(insertSql, [user_id, movie_id]);
+      console.log("[MOVE TO WATCHLIST] Inserted with ID:", insertResult.rows[0].watch_list_id);
+    } else {
+      console.log("[MOVE TO WATCHLIST] Movie already in watchlist, skipping insert");
+    }
+
+    // Commit the transaction
+    await db.query("COMMIT");
+    console.log("[MOVE TO WATCHLIST] Transaction committed successfully");
+
+    res.json({ success: true });
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.error("[MOVE TO WATCHLIST] Error:", err);
+    res.status(500).json({ error: "Failed to move to watchlist", details: err.message });
+  }
+});
+
+// Check if movie is in watchlist
+app.get("/api/watchlist/check/:movie_id", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { movie_id } = req.params;
+
+  try {
+    const sql = `
+      SELECT watch_list_id FROM watch_list
+      WHERE user_id = $1 AND movie_id = $2
+    `;
+    const result = await db.query(sql, [user_id, movie_id]);
+    res.json({ inWatchlist: result.rows.length > 0 });
+  } catch (err) {
+    console.error("Error checking watchlist:", err);
+    res.status(500).json({ error: "Failed to check watchlist" });
+  }
+});
+
+// Update watchlist priority
+app.patch("/api/watchlist/:watch_list_id/priority", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { watch_list_id } = req.params;
+  const { priority_01 } = req.body;
+
+  if (priority_01 === undefined) {
+    return res.status(400).json({ error: "priority_01 is required" });
+  }
+
+  try {
+    const sql = `
+      UPDATE watch_list
+      SET priority_01 = $1
+      WHERE watch_list_id = $2 AND user_id = $3
+    `;
+    await db.query(sql, [priority_01, watch_list_id, user_id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error updating priority:", err);
+    res.status(500).json({ error: "Failed to update priority" });
+  }
+});
+
+// Remove from watchlist
+app.delete("/api/watchlist/:movie_id", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { movie_id } = req.params;
+
+  try {
+    const sql = `
+      DELETE FROM watch_list
+      WHERE user_id = $1 AND movie_id = $2
+    `;
+    await db.query(sql, [user_id, movie_id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error removing from watchlist:", err);
+    res.status(500).json({ error: "Failed to remove from watchlist" });
+  }
 });
 
 // ============================================================================
@@ -527,9 +951,11 @@ app.get("/api/search-movies", requireLogin, async (req, res) => {
         };
       });
 
-    // Check which movies the user has already watched
+    // Check which movies the user has already watched and in watchlist
     if (movies.length > 0) {
       const movieIds = movies.map(m => m.movie_id);
+
+      // Check watched list
       const watchedQuery = `
         SELECT movie_id, watched_id
         FROM watched_list
@@ -537,7 +963,15 @@ app.get("/api/search-movies", requireLogin, async (req, res) => {
       `;
       const watchedResult = await db.query(watchedQuery, [user_id, movieIds]);
 
-      // Create a map with both number and string keys to handle type mismatches
+      // Check watchlist
+      const watchlistQuery = `
+        SELECT movie_id
+        FROM watch_list
+        WHERE user_id = $1 AND movie_id = ANY($2)
+      `;
+      const watchlistResult = await db.query(watchlistQuery, [user_id, movieIds]);
+
+      // Create maps with both number and string keys to handle type mismatches
       const watchedMap = new Map();
       watchedResult.rows.forEach(row => {
         watchedMap.set(row.movie_id, row.watched_id);
@@ -545,7 +979,14 @@ app.get("/api/search-movies", requireLogin, async (req, res) => {
         watchedMap.set(Number(row.movie_id), row.watched_id);
       });
 
-      // Add isWatched and watched_id properties to each movie
+      const watchlistMap = new Map();
+      watchlistResult.rows.forEach(row => {
+        watchlistMap.set(row.movie_id, true);
+        watchlistMap.set(String(row.movie_id), true);
+        watchlistMap.set(Number(row.movie_id), true);
+      });
+
+      // Add isWatched, watched_id, and inWatchlist properties to each movie
       movies.forEach(movie => {
         const watchedId = watchedMap.get(movie.movie_id) || watchedMap.get(String(movie.movie_id)) || watchedMap.get(Number(movie.movie_id));
         if (watchedId) {
@@ -554,6 +995,9 @@ app.get("/api/search-movies", requireLogin, async (req, res) => {
         } else {
           movie.isWatched = false;
         }
+
+        const inWatchlist = watchlistMap.get(movie.movie_id) || watchlistMap.get(String(movie.movie_id)) || watchlistMap.get(Number(movie.movie_id));
+        movie.inWatchlist = !!inWatchlist;
       });
     }
 
@@ -570,60 +1014,25 @@ app.get("/api/movie/:movie_id", requireLogin, async (req, res) => {
   const movie_id = req.params.movie_id;
 
   try {
-    // Check if movie exists in database
-    const checkSql = `
+    // Ensure movie exists in database
+    const movieAdded = await ensureMovieInDatabase(movie_id);
+    if (!movieAdded) {
+      return res.status(404).json({ error: "Movie not found" });
+    }
+
+    // Fetch movie from database
+    const sql = `
       SELECT movie_id, movie_title, poster_full_url, movie_release_date
       FROM all_movies
       WHERE movie_id = $1
     `;
-    const result = await db.query(checkSql, [movie_id]);
-
-    let movie;
+    const result = await db.query(sql, [movie_id]);
 
     if (result.rows.length === 0) {
-      // Movie not in database, fetch from TMDb
-      console.log(`Movie ${movie_id} not found in database, fetching from TMDb...`);
-
-      const tmdbUrl = `https://api.themoviedb.org/3/movie/${movie_id}?api_key=${TMDB_API_KEY}`;
-      const response = await fetch(tmdbUrl);
-
-      if (!response.ok) {
-        return res.status(404).json({ error: "Movie not found on TMDb" });
-      }
-
-      const tmdbMovie = await response.json();
-
-      const posterUrl = tmdbMovie.poster_path
-        ? `https://image.tmdb.org/t/p/w500${tmdbMovie.poster_path}`
-        : null;
-
-      // Insert movie into database
-      const insertSql = `
-        INSERT INTO all_movies (movie_id, movie_title, poster_full_url, movie_release_date)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (movie_id) DO NOTHING
-        RETURNING *
-      `;
-
-      await db.query(insertSql, [
-        tmdbMovie.id,
-        tmdbMovie.title,
-        posterUrl,
-        tmdbMovie.release_date || null
-      ]);
-
-      movie = {
-        movie_id: tmdbMovie.id,
-        movie_title: tmdbMovie.title,
-        poster_full_url: posterUrl,
-        movie_release_date: tmdbMovie.release_date || null
-      };
-
-      console.log(`Movie ${movie_id} added to database`);
-    } else {
-      movie = result.rows[0];
+      return res.status(404).json({ error: "Movie not found" });
     }
 
+    const movie = result.rows[0];
     const releaseDate = movie.movie_release_date ? new Date(movie.movie_release_date) : null;
 
     res.json({
@@ -642,29 +1051,46 @@ app.post("/add-movie/:movie_id", requireLogin, async (req, res) => {
   const movie_id = req.params.movie_id;
   const { rating, review } = req.body;
 
-  const sql = `
-    INSERT INTO watched_list (user_id, movie_id, user_rating, review)
-    VALUES ($1, $2, $3, $4)
-  `;
+  try {
+    // Ensure movie exists in all_movies table
+    const movieAdded = await ensureMovieInDatabase(movie_id);
+    if (!movieAdded) {
+      return res.status(500).send("Failed to fetch movie data");
+    }
 
-  await db.query(sql, [user_id, movie_id, rating, review || null]);
+    const sql = `
+      INSERT INTO watched_list (user_id, movie_id, user_rating, review)
+      VALUES ($1, $2, $3, $4)
+    `;
 
-  // Update popcorn kernels: +1 for adding a movie
-  let kernelsToAdd = 1;
+    await db.query(sql, [user_id, movie_id, rating, review || null]);
 
-  // +5 additional if a review is provided
-  if (review && review.trim() !== '') {
-    kernelsToAdd += 5;
+    // Remove from watchlist if it exists there
+    await db.query(
+      `DELETE FROM watch_list WHERE user_id = $1 AND movie_id = $2`,
+      [user_id, movie_id]
+    );
+
+    // Update popcorn kernels: +1 for adding a movie
+    let kernelsToAdd = 1;
+
+    // +5 additional if a review is provided
+    if (review && review.trim() !== '') {
+      kernelsToAdd += 5;
+    }
+
+    await db.query(
+      `UPDATE users SET popcorn_kernels = COALESCE(popcorn_kernels, 0) + $1 WHERE user_id = $2`,
+      [kernelsToAdd, user_id]
+    );
+
+    console.log(`[MOVIE ADDED] User ${user_id} added movie ${movie_id} - Rating: ${rating}, Has Review: ${!!(review && review.trim())}, Kernels +${kernelsToAdd}`);
+
+    res.redirect("/watched");
+  } catch (err) {
+    console.error("Error adding movie to watched list:", err);
+    res.status(500).send("Failed to add movie");
   }
-
-  await db.query(
-    `UPDATE users SET popcorn_kernels = COALESCE(popcorn_kernels, 0) + $1 WHERE user_id = $2`,
-    [kernelsToAdd, user_id]
-  );
-
-  console.log(`[MOVIE ADDED] User ${user_id} added movie ${movie_id} - Rating: ${rating}, Has Review: ${!!(review && review.trim())}, Kernels +${kernelsToAdd}`);
-
-  res.redirect("/watched");
 });
 
 // UPDATE existing watched entry

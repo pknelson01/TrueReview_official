@@ -380,6 +380,27 @@
             transform: translateY(-2px);
         }
 
+        .watchlist-btn {
+            width: 100%;
+            font-family: 'Oswald', sans-serif;
+            font-size: 16px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 18px;
+            background: transparent;
+            color: var(--white);
+            border: 2px solid var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .watchlist-btn:hover {
+            background: var(--white);
+            color: var(--charcoal);
+            transform: translateY(-2px);
+        }
+
         .delete-btn {
             width: 100%;
             font-family: 'Oswald', sans-serif;
@@ -399,10 +420,108 @@
             color: var(--charcoal);
             transform: translateY(-2px);
         }
+
+        /* Custom Confirmation Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--charcoal);
+            border: 3px solid var(--white);
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+        }
+
+        .modal-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--white);
+            padding-bottom: 15px;
+        }
+
+        .modal-message {
+            font-family: 'Anonymous Pro', monospace;
+            font-size: 16px;
+            color: var(--off-white);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .modal-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .modal-btn {
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 15px;
+            border: 2px solid var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-yes {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .modal-btn-yes:hover {
+            background: transparent;
+            color: var(--white);
+        }
+
+        .modal-btn-no {
+            background: transparent;
+            color: var(--white);
+        }
+
+        .modal-btn-no:hover {
+            background: var(--white);
+            color: var(--charcoal);
+        }
     </style>
 </head>
 <body>
     <div class="grid-overlay"></div>
+
+    <!-- Custom Confirmation Modal -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-box">
+            <div class="modal-title">Confirm Action</div>
+            <div class="modal-message">
+                Are you sure? This will delete your entry and review.
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" id="modal-yes">Yes, I'm Sure</button>
+                <button class="modal-btn modal-btn-no" id="modal-no">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <div class="header-container">
         <div class="header-bar">
@@ -426,7 +545,7 @@
         <div class="tab-bar">
             <span class="tab">FOLLOWING (coming soon...)</span>
             <a href="/watched" class="tab">WATCHED</a>
-            <span class="tab">WATCHLIST (coming soon...)</span>
+            <a href="/watchlist" class="tab">WATCHLIST</a>
             <span class="tab">TOP-N (coming soon...)</span>
             <a href="/dashboard" class="tab" id="dashboard-tab"></a>
         </div>
@@ -461,6 +580,7 @@
             <textarea id="review" name="review" rows="5"></textarea>
 
             <button type="submit" class="submit-btn">Update</button>
+            <button type="button" class="watchlist-btn" id="watchlist-btn">Move to Watchlist</button>
         </form>
 
         <form id="delete-form" method="POST">
@@ -470,6 +590,8 @@
 
     <script src="/public/js/update_movie.js"></script>
     <script>
+        // watchedId is already declared in update_movie.js
+
         // Update dashboard tab with username
         async function updateDashboardTab() {
             try {
@@ -481,6 +603,84 @@
             }
         }
         updateDashboardTab();
+
+        // Custom modal function
+        function showConfirmModal() {
+            return new Promise((resolve) => {
+                const modal = document.getElementById("confirm-modal");
+                const yesBtn = document.getElementById("modal-yes");
+                const noBtn = document.getElementById("modal-no");
+
+                // Show modal
+                modal.classList.add("active");
+
+                // Handle Yes button
+                const handleYes = () => {
+                    modal.classList.remove("active");
+                    yesBtn.removeEventListener("click", handleYes);
+                    noBtn.removeEventListener("click", handleNo);
+                    resolve(true);
+                };
+
+                // Handle No button
+                const handleNo = () => {
+                    modal.classList.remove("active");
+                    yesBtn.removeEventListener("click", handleYes);
+                    noBtn.removeEventListener("click", handleNo);
+                    resolve(false);
+                };
+
+                yesBtn.addEventListener("click", handleYes);
+                noBtn.addEventListener("click", handleNo);
+
+                // Close on overlay click
+                modal.addEventListener("click", (e) => {
+                    if (e.target === modal) {
+                        handleNo();
+                    }
+                });
+            });
+        }
+
+        // Add to watchlist functionality (move from watched to watchlist)
+        const watchlistBtn = document.getElementById("watchlist-btn");
+
+        if (watchlistBtn) {
+            watchlistBtn.addEventListener("click", async () => {
+                // Show custom modal instead of browser confirm
+                const confirmed = await showConfirmModal();
+                if (!confirmed) return;
+
+                try {
+                    // Get movie_id from the watched entry
+                    const watchedRes = await fetch(`/api/watched/${watchedId}`);
+
+                    if (!watchedRes.ok) {
+                        console.error("Failed to get movie details");
+                        return;
+                    }
+                    const watchedData = await watchedRes.json();
+                    const movieId = watchedData.movie_id;
+
+                    // Move to watchlist
+                    const res = await fetch("/api/watchlist/move-from-watched", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ watched_id: watchedId, movie_id: movieId })
+                    });
+
+                    if (!res.ok) {
+                        const error = await res.json();
+                        console.error("Failed to move to watchlist:", error);
+                        return;
+                    }
+
+                    window.location.href = "/watchlist";
+                } catch (err) {
+                    console.error("Error moving to watchlist:", err);
+                }
+            });
+        }
 
         // Validate rating to one decimal place
         document.getElementById("update-form").addEventListener("submit", (e) => {
