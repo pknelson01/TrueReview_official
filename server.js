@@ -280,19 +280,9 @@ app.get("/api/dashboard", requireLogin, async (req, res) => {
 
   // Only update session if not a polling request
   const updateSession = req.query.updateSession !== 'false';
-
-  // console.log('Server delta calc:', {
-  //   updateSession,
-  //   currentFollowingCount,
-  //   lastViewedFollowingCount,
-  //   followingDelta,
-  //   willUpdateSession: updateSession
-  // });
-
   if (updateSession) {
     req.session.last_viewed_follower_count = currentFollowerCount;
     req.session.last_viewed_following_count = currentFollowingCount;
-    console.log('Session updated');
   }
 
   const statsQ = `

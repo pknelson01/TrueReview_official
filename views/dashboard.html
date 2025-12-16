@@ -1238,9 +1238,7 @@
                 const followingDelta = data.following_delta || 0;
 
                 // Follower count with animation (only show if modal was just closed)
-                console.log('Follower animation check:', { showAnimations, followerDelta, currentFollowerCount });
                 if (showAnimations && followerDelta !== 0) {
-                    console.log('Showing follower animation');
                     const startValue = currentFollowerCount - followerDelta;
                     const followerElement = document.getElementById("followerCount");
                     const deltaElement = document.getElementById("followerDelta");
@@ -1262,9 +1260,7 @@
                 }
 
                 // Following count with animation (only show if modal was just closed)
-                console.log('Following animation check:', { showAnimations, followingDelta, currentFollowingCount });
                 if (showAnimations && followingDelta !== 0) {
-                    console.log('Showing following animation');
                     const startValue = currentFollowingCount - followingDelta;
                     const followingElement = document.getElementById("followingCount");
                     const deltaElement = document.getElementById("followingDelta");
