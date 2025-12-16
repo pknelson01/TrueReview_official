@@ -1,0 +1,40 @@
+# True Review
+---
+
+
+
+
+
+## Setup Instructions:
+
+***node(v24.11.1)***
+***npm(11.7.0)***
+
+1. Click on the <> Code dropdown
+    - *Select "Download Zip"*
+2. Create a folder on your desktop titled **TrueReview** (exactly as shown).
+3. Double click the zip in your browsers downloads
+4. Find the folder in your downloads folder and move to your new folder on the desktop
+5. Open your terminal
+    - If on mac 
+        - (**cmd + space**) and type in **terminal.app** and press enter
+    - If on windows
+        - Press the **Windows Key** and type either **Command Prompt** or **PowerShell** and press enter. 
+6. Copy and paste the following Command
+    - *cd desktop/TrueReview*
+7. Copy and paste the following Command
+    - *curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash*
+8. Close the terminal and reopen. Then copy and paste the following
+    - *cd desktop/TrueReview*
+9. Run the following Command
+    - *nvm install 24.11.1*
+10. run the following Command
+    - *nvm use 24.11.1*
+11. Verify you are using the correct versions (below "Setup Instructions:") with
+    - *node -v*
+    - *npm -v*
+12. Run the following Command
+    - *npm start*
+13. Open up Google Chrome and type the following
+    - *localhost:3000*
+14. You are now good to create an account and use **TrueReview**
