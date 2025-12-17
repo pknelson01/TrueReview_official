@@ -140,3 +140,58 @@ A personal queue of movies users want to watch. Supports priority flagging, filt
 - Add movie: `server.js:960-963` - Auto-removes from watchlist when rated
 
 ---
+
+## User Search
+
+**Description:**
+A social discovery feature that allows users to search for other users by username and manage follow relationships. Integrated into the main search page with a tab-based interface for switching between movie and user searches.
+
+**Features:**
+- Fuzzy search by username using ILIKE pattern matching
+- Real-time search with 300ms debounce
+- Displays user profile pictures, display names (@username format)
+- Shows current follow status for each user
+- One-click follow/unfollow toggle
+- Excludes current user from search results
+- Tab-based interface: Movies / Users / Cast & Crew (coming soon)
+- Auto-updates button state after follow/unfollow actions
+- Limit of 50 search results
+
+**Code Locations:**
+- **Page Route:** Integrated into search page at `server.js:306` - `/add-movie` route
+- **Page File:** `views/add_movies.html:723-726` - Search type tabs
+- **JavaScript:** `public/js/add_movies.js`
+  - Tab switching: Lines 16-46
+  - User result rendering: Lines 96-135
+  - Search logic: Lines 140-176
+  - Follow/unfollow toggle: Lines 191-218
+- **API Endpoints:**
+  - GET `/api/search-users` - Search users by username: `server.js:1036-1072`
+  - POST `/api/user/follow/:user_id` - Follow a user: `server.js:1324-1346`
+  - POST `/api/user/unfollow/:user_id` - Unfollow a user: `server.js:1349-1365`
+
+**Database:**
+- Table: `users`
+- Search columns: username, display_name, profile_picture
+- Table: `user_follows`
+- Columns: follower_id (FK to users), following_id (FK to users), followed_at (timestamp)
+- Primary Key: (follower_id, following_id) - composite key prevents duplicate follows
+
+**UI Components:**
+- Search type tabs with active state indicator
+- User result cards with horizontal layout
+- Circular profile pictures (60px) with border
+- Display name (large, bold) and @username (smaller, gray)
+- Follow/Unfollow button with state-based styling
+- Default TrueReview logo for users without profile pictures
+- Responsive grid layout (full-width cards in results list)
+
+**Implementation Details:**
+- Uses simple ILIKE search (no PostgreSQL extensions required)
+- Search pattern: `%query%` for partial matching
+- Prevents self-following with validation check
+- Uses `ON CONFLICT DO NOTHING` to prevent duplicate follows
+- Follow status checked via EXISTS subquery in search results
+- Button state managed via data attributes (data-following, data-user-id)
+
+---
