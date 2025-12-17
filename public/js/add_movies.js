@@ -1,18 +1,54 @@
 // =============================================================================
-//  add_movies.js — Client-side rendering for Add Movie page
+//  add_movies.js — Client-side rendering for Search page (Movies & Users)
 // =============================================================================
 
-const searchInput = document.getElementById("movie-search");
+const searchInput = document.getElementById("search-input");
 const resultsDiv = document.getElementById("search-results");
 const loadingText = document.getElementById("loading-text");
 const errorText = document.getElementById("error-text");
 
 let debounceTimer = null;
+let currentSearchType = 'movies'; // Default to movies
+
+// Make currentSearchType accessible globally for tab switching
+window.addEventListener('load', () => {
+    // Listen for tab changes
+    document.querySelectorAll('.search-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Don't do anything if the button is disabled
+            if (this.classList.contains('disabled')) {
+                return;
+            }
+
+            // Remove active class from all tabs
+            document.querySelectorAll('.search-tab-btn').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Add active class to clicked tab
+            this.classList.add('active');
+
+            // Update search type
+            currentSearchType = this.dataset.searchType;
+
+            // Update placeholder
+            searchInput.placeholder = currentSearchType === 'movies'
+                ? 'Search for a movie...'
+                : 'Search for users...';
+
+            // Clear results
+            searchInput.value = '';
+            resultsDiv.innerHTML = '';
+
+            console.log('Search type switched to:', currentSearchType);
+        });
+    });
+});
 
 // -----------------------------------------------------------------------------
-//  RENDER RESULTS INTO HTML
+//  RENDER MOVIE RESULTS
 // -----------------------------------------------------------------------------
-function renderResults(movies) {
+function renderMovieResults(movies) {
     resultsDiv.innerHTML = "";
 
     if (!movies || movies.length === 0) {
@@ -21,21 +57,18 @@ function renderResults(movies) {
     }
 
     movies.forEach(movie => {
-        // Create card as link - links to edit page for watched movies, rate page for unwatched
         const card = document.createElement("a");
         card.className = movie.isWatched ? "movie-card watched" : "movie-card";
 
         if (movie.isWatched && movie.watched_id) {
             card.href = `/update-movie/${movie.watched_id}`;
         } else if (movie.isWatched && !movie.watched_id) {
-            // Safety fallback - if watched but no watched_id, link to rate page
             console.warn("Movie marked as watched but missing watched_id:", movie);
             card.href = `/rate-movie/${movie.movie_id}`;
         } else {
             card.href = `/rate-movie/${movie.movie_id}`;
         }
 
-        // Determine watchlist button style and text
         const watchlistBtnClass = movie.inWatchlist ? "watchlist-btn in-watchlist" : "watchlist-btn";
         const watchlistBtnText = movie.inWatchlist ? "✓ In Watchlist" : "+ Watchlist";
 
@@ -58,9 +91,53 @@ function renderResults(movies) {
 }
 
 // -----------------------------------------------------------------------------
-//  FETCH SEARCH RESULTS
+//  RENDER USER RESULTS
 // -----------------------------------------------------------------------------
-async function searchMovies(query) {
+function renderUserResults(users) {
+    resultsDiv.innerHTML = "";
+
+    if (!users || users.length === 0) {
+        resultsDiv.innerHTML = `<p class="no-results">No users found.</p>`;
+        return;
+    }
+
+    users.forEach(user => {
+        const card = document.createElement("div");
+        card.className = "user-result-card";
+
+        const profilePicUrl = user.profile_picture
+            ? `/uploads/profile_pictures/${user.profile_picture}`
+            : '/TrueReview_logo/Icon_BW.png';
+
+        const followBtnClass = user.is_following ? "user-follow-btn following" : "user-follow-btn";
+        const followBtnText = user.is_following ? "Following" : "Follow";
+
+        card.innerHTML = `
+            <div class="user-result-left">
+                <img class="user-profile-pic" src="${profilePicUrl}" alt="${user.username}" onerror="this.src='/TrueReview_logo/Icon_BW.png'" />
+                <div class="user-info">
+                    <div class="user-display-name">${user.display_name}</div>
+                    <div class="user-username">@${user.username}</div>
+                </div>
+            </div>
+            <button
+                class="${followBtnClass}"
+                onclick="toggleUserFollow(event, ${user.user_id}, this)"
+                data-user-id="${user.user_id}"
+                data-following="${user.is_following}"
+            >
+                ${followBtnText}
+            </button>
+        `;
+
+        resultsDiv.appendChild(card);
+    });
+}
+
+// -----------------------------------------------------------------------------
+//  FETCH SEARCH RESULTS (Movies or Users)
+// -----------------------------------------------------------------------------
+async function performSearch(query) {
     if (!query.trim()) {
         resultsDiv.innerHTML = "";
         return;
@@ -70,15 +147,26 @@ async function searchMovies(query) {
     errorText.style.display = "none";
 
     try {
-        // IMPORTANT: Your backend route is /api/search-movies
-        const res = await fetch(`/api/search-movies?q=${encodeURIComponent(query)}`);
+        let endpoint = '';
+        if (currentSearchType === 'movies') {
+            endpoint = `/api/search-movies?q=${encodeURIComponent(query)}`;
+        } else if (currentSearchType === 'users') {
+            endpoint = `/api/search-users?q=${encodeURIComponent(query)}`;
+        }
+
+        const res = await fetch(endpoint);
 
         if (!res.ok) throw new Error("Bad response");
 
-        const movies = await res.json();
-        
+        const data = await res.json();
+
         loadingText.style.display = "none";
-        renderResults(movies);
+
+        if (currentSearchType === 'movies') {
+            renderMovieResults(data);
+        } else if (currentSearchType === 'users') {
+            renderUserResults(data);
+        }
 
     } catch (err) {
         loadingText.style.display = "none";
@@ -93,9 +181,41 @@ async function searchMovies(query) {
 searchInput.addEventListener("input", () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
-        searchMovies(searchInput.value);
+        performSearch(searchInput.value);
     }, 300);
 });
+
+// -----------------------------------------------------------------------------
+//  TOGGLE USER FOLLOW/UNFOLLOW
+// -----------------------------------------------------------------------------
+async function toggleUserFollow(event, userId, button) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const isFollowing = button.getAttribute('data-following') === 'true';
+    const endpoint = isFollowing ? 'unfollow' : 'follow';
+
+    try {
+        const res = await fetch(`/api/user/${endpoint}/${userId}`, {
+            method: 'POST'
+        });
+
+        if (!res.ok) {
+            const error = await res.json();
+            console.error(`Failed to ${endpoint} user:`, error.error);
+            return;
+        }
+
+        // Update button state
+        button.setAttribute('data-following', !isFollowing);
+        button.className = isFollowing ? 'user-follow-btn' : 'user-follow-btn following';
+        button.textContent = isFollowing ? 'Follow' : 'Following';
+
+        console.log(`${isFollowing ? 'Unfollowed' : 'Followed'} user ${userId}`);
+    } catch (err) {
+        console.error(`Error ${endpoint}ing user:`, err);
+    }
+}
 
 // -----------------------------------------------------------------------------
 //  CUSTOM MODAL FUNCTIONALITY
@@ -106,10 +226,8 @@ function showConfirmModal() {
         const yesBtn = document.getElementById("modal-yes");
         const noBtn = document.getElementById("modal-no");
 
-        // Show modal
         modal.classList.add("active");
 
-        // Handle Yes button
         const handleYes = () => {
             modal.classList.remove("active");
             yesBtn.removeEventListener("click", handleYes);
@@ -117,7 +235,6 @@ function showConfirmModal() {
             resolve(true);
         };
 
-        // Handle No button
         const handleNo = () => {
             modal.classList.remove("active");
             yesBtn.removeEventListener("click", handleYes);
@@ -128,7 +245,6 @@ function showConfirmModal() {
         yesBtn.addEventListener("click", handleYes);
         noBtn.addEventListener("click", handleNo);
 
-        // Close on overlay click
         modal.addEventListener("click", (e) => {
             if (e.target === modal) {
                 handleNo();
@@ -138,7 +254,7 @@ function showConfirmModal() {
 }
 
 // -----------------------------------------------------------------------------
-//  ADD TO WATCHLIST FUNCTIONALITY
+//  MOVIE WATCHLIST FUNCTIONALITY
 // -----------------------------------------------------------------------------
 async function addToWatchlist(event, movieId, watchedId, isWatched, inWatchlist) {
     event.preventDefault();
@@ -146,7 +262,6 @@ async function addToWatchlist(event, movieId, watchedId, isWatched, inWatchlist)
 
     const button = event.target;
 
-    // If already in watchlist, remove it
     if (inWatchlist) {
         try {
             const res = await fetch(`/api/watchlist/${movieId}`, {
@@ -160,10 +275,8 @@ async function addToWatchlist(event, movieId, watchedId, isWatched, inWatchlist)
             }
 
             console.log("Removed from watchlist");
-            // Update button appearance
             button.classList.remove("in-watchlist");
             button.textContent = "+ Watchlist";
-            // Update the onclick attribute
             button.setAttribute("onclick", `addToWatchlist(event, ${movieId}, ${watchedId || null}, ${isWatched}, false)`);
         } catch (err) {
             console.error("Error removing from watchlist:", err);
@@ -171,12 +284,10 @@ async function addToWatchlist(event, movieId, watchedId, isWatched, inWatchlist)
         return;
     }
 
-    // If movie is already watched, show confirmation popup
     if (isWatched && watchedId) {
         const confirmed = await showConfirmModal();
         if (!confirmed) return;
 
-        // Move from watched to watchlist
         try {
             const res = await fetch("/api/watchlist/move-from-watched", {
                 method: "POST",
@@ -190,13 +301,11 @@ async function addToWatchlist(event, movieId, watchedId, isWatched, inWatchlist)
                 return;
             }
 
-            // Refresh the search to update the UI
-            searchMovies(searchInput.value);
+            performSearch(searchInput.value);
         } catch (err) {
             console.error("Error moving to watchlist:", err);
         }
     } else {
-        // Simply add to watchlist (movie not watched)
         try {
             const res = await fetch("/api/watchlist/add", {
                 method: "POST",
@@ -211,10 +320,8 @@ async function addToWatchlist(event, movieId, watchedId, isWatched, inWatchlist)
             }
 
             console.log("Added to watchlist");
-            // Update button appearance
             button.classList.add("in-watchlist");
             button.textContent = "✓ In Watchlist";
-            // Update the onclick attribute
             button.setAttribute("onclick", `addToWatchlist(event, ${movieId}, ${watchedId || null}, ${isWatched}, true)`);
         } catch (err) {
             console.error("Error adding to watchlist:", err);

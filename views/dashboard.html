@@ -364,6 +364,14 @@
         }
 
         .username {
+            font-family: 'Anonymous Pro', monospace;
+            font-size: 14px;
+            color: var(--steel);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .user-display-name {
             font-family: 'Oswald', sans-serif;
             font-size: 24px;
             font-weight: 700;
@@ -1045,7 +1053,8 @@
                                 <input id="pfp-input" type="file" accept="image/*" style="display:none;">
                             </div>
 
-                            <div class="username" id="username">Loading...</div>
+                            <div class="username" id="display-username">@username</div>
+                            <div class="user-display-name" id="user-display-name">Display Name</div>
                             <div class="user-title" id="user-title"></div>
 
                             <div class="stats-grid">
@@ -1190,25 +1199,14 @@
                 const data = await res.json();
                 const user = data.user;
 
-                // Set username and initials
-                document.getElementById("username").textContent = user.username;
-                const initials = user.username.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+                // Set username, display name and initials
+                document.getElementById("display-username").textContent = "@" + user.username;
+                document.getElementById("user-display-name").textContent = user.display_name;
+                const initials = user.display_name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
                 document.getElementById("profile-initials").textContent = initials;
 
-                // Update dashboard tab with username (using separate endpoint to avoid updating popcorn session)
-                async function updateDashboardTab() {
-                    try {
-                        const res = await fetch("/api/user/username");
-                        const data = await res.json();
-                        document.getElementById("dashboard-tab").textContent = data.username.toUpperCase();
-                    } catch (err) {
-                        console.error("Error loading username:", err);
-                    }
-                }
-                updateDashboardTab();
-
-                // Also set from current user data
-                document.getElementById("dashboard-tab").textContent = user.username.toUpperCase();
+                // Update dashboard tab with display_name
+                document.getElementById("dashboard-tab").textContent = user.display_name.toUpperCase();
 
                 // Profile picture
                 if (user.profile_picture) {

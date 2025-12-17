@@ -559,7 +559,7 @@
             try {
                 const res = await fetch("/api/user/username");
                 const data = await res.json();
-                document.getElementById("dashboard-tab").textContent = data.username.toUpperCase();
+                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
             } catch (err) {
                 console.error("Error loading username:", err);
             }

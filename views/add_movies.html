@@ -252,11 +252,11 @@
         }
 
         .search-form {
-            max-width: 800px;
+            max-width: 100%;
             margin: 0 auto 40px;
         }
 
-        #movie-search {
+        #search-input {
             width: 100%;
             font-family: 'Anonymous Pro', monospace;
             background: var(--charcoal);
@@ -267,7 +267,7 @@
             transition: all 0.3s ease;
         }
 
-        #movie-search:focus {
+        #search-input:focus {
             outline: none;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
         }
@@ -438,6 +438,155 @@
             padding: 60px 20px;
         }
 
+        /* User Search Result Styles */
+        .user-result-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--charcoal);
+            border: 2px solid var(--white);
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            grid-column: 1 / -1;
+        }
+
+        .user-result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .user-result-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-profile-pic {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--white);
+            object-fit: cover;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .user-display-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--white);
+            letter-spacing: 1px;
+        }
+
+        .user-username {
+            font-size: 14px;
+            color: var(--steel);
+            letter-spacing: 0.5px;
+        }
+
+        .user-follow-btn {
+            background: var(--white);
+            border: 2px solid var(--white);
+            color: var(--charcoal);
+            padding: 10px 20px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .user-follow-btn:hover {
+            background: var(--off-white);
+            transform: translateY(-2px);
+        }
+
+        .user-follow-btn.following {
+            background: transparent;
+            border: 2px solid var(--white);
+            color: var(--white);
+        }
+
+        .user-follow-btn.following:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Search Type Tabs */
+        .search-type-tabs {
+            display: flex;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 40px;
+            gap: 40px;
+        }
+
+        .search-type-tabs::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 2px;
+            background: var(--steel);
+            z-index: 1;
+        }
+
+        .search-tab-btn {
+            background: transparent;
+            border: none;
+            font-family: 'Oswald', sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--steel);
+            cursor: pointer;
+            padding: 0 0 12px 0;
+            position: relative;
+            transition: color 0.3s ease;
+            z-index: 2;
+        }
+
+        .search-tab-btn::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: transparent;
+            transition: background 0.3s ease;
+        }
+
+        .search-tab-btn:hover {
+            color: var(--white);
+        }
+
+        .search-tab-btn:hover::after {
+            background: var(--white);
+        }
+
+        .search-tab-btn.active {
+            color: var(--white);
+        }
+
+        .search-tab-btn.active::after {
+            background: var(--white);
+        }
+
+        .search-tab-btn.disabled {
+            cursor: default;
+        }
+
         /* Custom Confirmation Modal */
         .modal-overlay {
             display: none;
@@ -571,9 +720,15 @@
     <div class="add-movie-container">
         <h1 class="page-title">Add a Movie</h1>
 
+        <div class="search-type-tabs">
+            <button class="search-tab-btn active" data-search-type="movies">Movies</button>
+            <button class="search-tab-btn" data-search-type="users">Users</button>
+            <button class="search-tab-btn disabled" data-search-type="cast">Cast & Crew (coming soon...)</button>
+        </div>
+
         <div class="search-form">
             <input
-                id="movie-search"
+                id="search-input"
                 type="text"
                 placeholder="Search for a movie..."
                 autocomplete="off"
@@ -588,14 +743,15 @@
 
     <script src="/public/js/add_movies.js"></script>
     <script>
-        // Update dashboard tab with username
+        // Update dashboard tab with display_name
         async function updateDashboardTab() {
             try {
                 const res = await fetch("/api/user/username");
                 const data = await res.json();
-                document.getElementById("dashboard-tab").textContent = data.username.toUpperCase();
+                const displayName = data.display_name || data.username;
+                document.getElementById("dashboard-tab").textContent = displayName.toUpperCase();
             } catch (err) {
-                console.error("Error loading username:", err);
+                console.error("Error loading display name:", err);
             }
         }
         updateDashboardTab();

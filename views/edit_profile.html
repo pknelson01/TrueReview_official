@@ -440,7 +440,12 @@
                 <form id="edit-form" action="/update-profile" method="POST">
                     <div class="form-group">
                         <label class="form-label" for="username">Username</label>
-                        <input type="text" id="username" name="username" class="form-input" required>
+                        <input type="text" id="username" name="username" class="form-input" required maxlength="20">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="display_name">Display Name</label>
+                        <input type="text" id="display_name" name="display_name" class="form-input" required maxlength="20">
                     </div>
 
                     <div class="form-group">
@@ -512,17 +517,18 @@
                 img.style.display = "block";
                 document.getElementById("profile-initials").style.display = "none";
             } else {
-                const initials = data.user.username.substring(0, 2).toUpperCase();
+                const initials = data.user.display_name.substring(0, 2).toUpperCase();
                 document.getElementById("profile-initials").textContent = initials;
             }
 
             // Set form values
             document.getElementById("username").value = data.user.username || "";
+            document.getElementById("display_name").value = data.user.display_name || "";
             document.getElementById("title").value = data.user.title || "";
             document.getElementById("bio").value = data.user.bio || "";
 
-            // Update dashboard tab with username
-            document.getElementById("dashboard-tab").textContent = data.user.username.toUpperCase();
+            // Update dashboard tab with display_name
+            document.getElementById("dashboard-tab").textContent = data.user.display_name.toUpperCase();
 
             // Load watched movies for favorite selection
             const watchedRes = await fetch("/api/watched");

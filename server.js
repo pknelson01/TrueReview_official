@@ -325,11 +325,23 @@ app.get("/signup", (req, res) => {
 
 // SIGNUP - CREATE NEW ACCOUNT
 app.post("/signup", async (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, display_name, email, password } = req.body;
 
   // Validate email format
   if (!isValidEmail(email)) {
     return res.redirect("/signup?error=invalid_email");
+  }
+
+  // Validate username (no spaces, alphanumeric, max 20)
+  const usernameRegex = /^[a-zA-Z0-9]{1,20}$/;
+  if (!usernameRegex.test(username)) {
+    return res.redirect("/signup?error=invalid_username");
+  }
+
+  // Validate display_name (letters and numbers only, max 20)
+  const displayNameRegex = /^[a-zA-Z0-9]{1,20}$/;
+  if (!display_name || !displayNameRegex.test(display_name)) {
+    return res.redirect("/signup?error=invalid_display_name");
   }
 
   try {
@@ -348,13 +360,13 @@ app.post("/signup", async (req, res) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user
+    // Insert new user with display_name
     const sql = `
-      INSERT INTO users (username, email, password)
-      VALUES ($1, $2, $3)
+      INSERT INTO users (username, display_name, email, password)
+      VALUES ($1, $2, $3, $4)
       RETURNING user_id
     `;
-    const result = await db.query(sql, [username, email, hashedPassword]);
+    const result = await db.query(sql, [username, display_name, email, hashedPassword]);
 
     // Log the user in
     req.session.user_id = result.rows[0].user_id;
@@ -445,18 +457,21 @@ app.get("/quiz", (req, res) => {
 // ============================================================================
 // API — DASHBOARD DATA
 // ============================================================================
-// Get username only (for header tab) - doesn't update popcorn kernels session
+// Get username and display_name (for header tab) - doesn't update popcorn kernels session
 app.get("/api/user/username", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
-  const result = await db.query("SELECT username FROM users WHERE user_id = $1", [user_id]);
-  res.json({ username: result.rows[0].username });
+  const result = await db.query("SELECT username, display_name FROM users WHERE user_id = $1", [user_id]);
+  res.json({
+    username: result.rows[0].username,
+    display_name: result.rows[0].display_name
+  });
 });
 
 app.get("/api/dashboard", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
 
   const userQ = `
-    SELECT user_id, username, title, bio, profile_picture, profile_background_photo, favorite_movie, popcorn_kernels
+    SELECT user_id, username, display_name, title, bio, profile_picture, profile_background_photo, favorite_movie, popcorn_kernels
     FROM users WHERE user_id = $1
   `;
   const user = (await db.query(userQ, [user_id])).rows[0];
@@ -844,16 +859,25 @@ app.post("/api/upload/background", requireLogin, uploadBackground.single("file")
 
 app.post("/update-profile", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
-  const { username, title, bio, favorite_movie } = req.body;
+  const { username, display_name, title, bio, favorite_movie } = req.body;
+
+  // Validate display_name if provided
+  if (display_name) {
+    const displayNameRegex = /^[a-zA-Z0-9]{1,20}$/;
+    if (!displayNameRegex.test(display_name)) {
+      return res.redirect("/edit-profile?error=invalid_display_name");
+    }
+  }
 
   const sql = `
     UPDATE users
-    SET username = $1, title = $2, bio = $3, favorite_movie = $4
-    WHERE user_id = $5
+    SET username = $1, display_name = $2, title = $3, bio = $4, favorite_movie = $5
+    WHERE user_id = $6
   `;
 
   await db.query(sql, [
     username,
+    display_name || username,
     title || null,
     bio || null,
     favorite_movie || null,
@@ -1004,6 +1028,45 @@ app.get("/api/search-movies", requireLogin, async (req, res) => {
     res.json(movies);
   } catch (error) {
     console.error("TMDb search error:", error);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
+// USER SEARCH - Fuzzy search by username
+app.get("/api/search-users", requireLogin, async (req, res) => {
+  const q = req.query.q || "";
+  const current_user_id = req.session.user_id;
+
+  if (!q.trim()) {
+    return res.json([]);
+  }
+
+  try {
+    // Simple ILIKE search - works without pg_trgm extension
+    const sql = `
+      SELECT
+        u.user_id,
+        u.username,
+        u.display_name,
+        u.profile_picture,
+        EXISTS(
+          SELECT 1 FROM user_follows
+          WHERE follower_id = $1 AND following_id = u.user_id
+        ) as is_following
+      FROM users u
+      WHERE
+        u.user_id != $1
+        AND u.username ILIKE $2
+      ORDER BY u.username ASC
+      LIMIT 50
+    `;
+
+    const searchPattern = `%${q}%`;
+    const result = await db.query(sql, [current_user_id, searchPattern]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error("User search error:", error);
     res.status(500).json({ error: "Search failed" });
   }
 });

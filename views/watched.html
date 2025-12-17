@@ -548,14 +548,14 @@
 
     <script src="/public/js/watched.js"></script>
     <script>
-        // Update dashboard tab with username
+        // Update dashboard tab with display_name
         async function updateDashboardTab() {
             try {
                 const res = await fetch("/api/user/username");
                 const data = await res.json();
-                document.getElementById("dashboard-tab").textContent = data.username.toUpperCase();
+                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
             } catch (err) {
-                console.error("Error loading username:", err);
+                console.error("Error loading display name:", err);
             }
         }
         updateDashboardTab();

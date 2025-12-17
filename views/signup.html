@@ -181,7 +181,10 @@
 
         <form action="/signup" method="POST" class="signup-form" onsubmit="return validateForm()">
             <label>Username</label>
-            <input type="text" name="username" id="username" required placeholder="Enter your username">
+            <input type="text" name="username" id="username" required placeholder="Enter your username" maxlength="20">
+
+            <label>Display Name</label>
+            <input type="text" name="display_name" id="display_name" required placeholder="Enter your display name" maxlength="20">
 
             <label>Email</label>
             <input type="text" name="email" id="email" required placeholder="Enter your email">
@@ -202,10 +205,28 @@
 
     <script>
         function validateForm() {
+            const username = document.getElementById('username').value;
+            const displayName = document.getElementById('display_name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const errorBox = document.getElementById('errorBox');
+
+            // Validate username (no spaces, alphanumeric only, max 20 chars)
+            const usernameRegex = /^[a-zA-Z0-9]{1,20}$/;
+            if (!usernameRegex.test(username)) {
+                errorBox.textContent = 'Username must be alphanumeric only, no spaces, max 20 characters';
+                errorBox.classList.add('show');
+                return false;
+            }
+
+            // Validate display name (letters and numbers only, max 20 chars)
+            const displayNameRegex = /^[a-zA-Z0-9]{1,20}$/;
+            if (!displayNameRegex.test(displayName)) {
+                errorBox.textContent = 'Display name must be letters and numbers only, max 20 characters';
+                errorBox.classList.add('show');
+                return false;
+            }
 
             // Validate email format
             if (!email.includes('@') || !email.includes('.com')) {
@@ -237,6 +258,12 @@
             errorBox.classList.add('show');
         } else if (error === 'invalid_email') {
             errorBox.textContent = 'Email must contain @ and .com';
+            errorBox.classList.add('show');
+        } else if (error === 'invalid_username') {
+            errorBox.textContent = 'Username must be alphanumeric only, no spaces, max 20 characters';
+            errorBox.classList.add('show');
+        } else if (error === 'invalid_display_name') {
+            errorBox.textContent = 'Display name must be letters and numbers only, max 20 characters';
             errorBox.classList.add('show');
         }
     </script>
