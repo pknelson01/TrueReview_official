@@ -154,7 +154,7 @@ A social discovery feature that allows users to search for other users by userna
 - One-click follow/unfollow toggle
 - Excludes current user from search results
 - Tab-based interface: Movies / Users / Cast & Crew (coming soon)
-- Auto-updates button state after follow/unfollow actions
+- Auto-updates button state after follow/unfollow actions 
 - Limit of 50 search results
 
 **Code Locations:**
