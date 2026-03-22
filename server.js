@@ -20,7 +20,7 @@ const __dirname = path.dirname(__filename);
 // ----------------------------------------------------
 // TMDb API Configuration
 // ----------------------------------------------------
-const TMDB_API_KEY = "9ca5e832beb93b3371c78a5fbc2280dc";
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
 
 // ----------------------------------------------------
 // Express Setup
@@ -51,9 +51,9 @@ app.use(
 // ----------------------------------------------------
 // PostgreSQL Setup
 // ----------------------------------------------------
+
 const db = new pg.Pool({
-  connectionString:
-    "postgresql://truereview_admin:TrNMyIlmWQqxTBtiownOkjAPiNGT6bK6@dpg-d4qhtuh5pdvs738o9d90-a.oregon-postgres.render.com/truereview",
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
 
@@ -283,8 +283,8 @@ async function ensureMovieInDatabase(movie_id) {
 
     // Determine if this was an ID reuse scenario
     const wasIdReuse = movieExists && titlesDifferSignificantly(oldTitle, movieData.title) &&
-                       oldReleaseDate && movieData.release_date &&
-                       Math.abs(new Date(oldReleaseDate).getFullYear() - new Date(movieData.release_date).getFullYear()) > 1;
+      oldReleaseDate && movieData.release_date &&
+      Math.abs(new Date(oldReleaseDate).getFullYear() - new Date(movieData.release_date).getFullYear()) > 1;
 
     if (wasIdReuse) {
       console.log(`[MOVIE DB] ✅ Movie ${movie_id} (${movieData.title}) successfully added after ID reuse cleanup`);
