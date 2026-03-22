@@ -4,6 +4,7 @@
 
 import express from "express";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
 import path from "path";
 import multer from "multer";
 import pg from "pg";
@@ -38,17 +39,6 @@ app.use("/views", express.static(path.join(__dirname, "views")));
 app.use("/TrueReview_logo", express.static(path.join(__dirname, "TrueReview_logo")));
 
 // ----------------------------------------------------
-// Sessions
-// ----------------------------------------------------
-app.use(
-  session({
-    secret: "truereview_secret_123",
-    resave: false,
-    saveUninitialized: false,
-  })
-);
-
-// ----------------------------------------------------
 // PostgreSQL Setup
 // ----------------------------------------------------
 
@@ -56,6 +46,27 @@ const db = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
 });
+
+// ----------------------------------------------------
+// Sessions
+// ----------------------------------------------------
+const PgSession = connectPgSimple(session);
+
+app.use(
+  session({
+    store: new PgSession({
+      pool: db,
+      tableName: "session",
+    }),
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    },
+  })
+);
 
 // ----------------------------------------------------
 // Multer (File Uploads)
@@ -180,7 +191,7 @@ async function ensureMovieInDatabase(movie_id) {
       if (titleChanged && yearChanged) {
         console.log(`[MOVIE DB] ⚠️  TMDB ID REUSE DETECTED for ${movie_id}!`);
         console.log(`[MOVIE DB] Old: "${oldTitle}" (${oldReleaseDate})`);
-        console.log(`[MOVIE DB] New: "${newTitle}" (${newReleaseDate})`);
+        console.log(`[MOVIE DB] New: "${movieData.title}" (${movieData.release_date})`);
         console.log(`[MOVIE DB] Deleting old movie from all users' lists...`);
 
         // Delete from all tables (this will cascade to watched_list and watch_list if foreign keys are set)
@@ -1367,7 +1378,7 @@ app.post("/api/user/unfollow/:user_id", requireLogin, async (req, res) => {
 // ============================================================================
 // START SERVER
 // ============================================================================
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () =>
   console.log(`TrueReview running at http://localhost:${PORT}`)
 );
