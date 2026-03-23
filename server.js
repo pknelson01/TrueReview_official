@@ -52,6 +52,8 @@ const db = new pg.Pool({
 // ----------------------------------------------------
 const PgSession = connectPgSimple(session);
 
+app.set("trust proxy", 1);
+
 app.use(
   session({
     store: new PgSession({
@@ -63,7 +65,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     },
   })
 );
