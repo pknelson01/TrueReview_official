@@ -58,7 +58,7 @@ app.use(
       pool: db,
       tableName: "session",
     }),
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "truereview_fallback_secret_123",
     resave: false,
     saveUninitialized: false,
     cookie: {
