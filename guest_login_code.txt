@@ -1,0 +1,67 @@
+================================================================
+FILE: TrueReview/views/login.html
+================================================================
+
+Add this button element just below the closing </form> tag
+and above the .extras div:
+
+    <a href="/guest-login" class="guest-btn">Continue as Guest</a>
+
+----------------------------------------------------------------
+
+Add this CSS inside the <style> block in login.html:
+
+        .guest-btn {
+            display: block;
+            width: 100%;
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 16px;
+            background: transparent;
+            color: var(--steel);
+            border: 2px solid var(--steel);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 12px;
+        }
+
+        .guest-btn:hover {
+            border-color: var(--white);
+            color: var(--white);
+        }
+
+================================================================
+FILE: server.js
+================================================================
+
+Add this route with the other GET routes.
+It looks up a guest account in the database by email,
+verifies the password, and logs the user in as that guest account.
+This requires a guest user to already exist in the database
+with email "guest@truereview.com" and password "guest":
+
+app.get("/guest-login", async (req, res) => {
+  const result = await db.query("SELECT * FROM users WHERE email = $1", ["guest@truereview.com"]);
+  if (result.rows.length === 0) return res.redirect("/login?error=1");
+  const user = result.rows[0];
+  const passwordMatch = await bcrypt.compare("guest", user.password);
+  if (!passwordMatch) return res.redirect("/login?error=1");
+  req.session.user_id = user.user_id;
+  res.redirect("/welcome");
+});
+
+================================================================
+NOTE: Database requirement
+================================================================
+
+A guest user must exist in the users table with:
+  email:    guest@truereview.com
+  password: guest  (stored as a bcrypt hash)
+
+If it does not exist, create it by running a signup through
+the app or inserting it directly into the database.
+================================================================

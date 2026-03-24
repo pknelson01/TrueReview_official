@@ -164,6 +164,29 @@
         .extras a:hover {
             color: var(--white);
         }
+
+        .guest-btn {
+            display: block;
+            width: 100%;
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 16px;
+            background: transparent;
+            color: var(--steel);
+            border: 2px solid var(--steel);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 12px;
+        }
+
+        .guest-btn:hover {
+            border-color: var(--white);
+            color: var(--white);
+        }
     </style>
 </head>
 <body>
@@ -183,6 +206,8 @@
 
             <button type="submit" class="login-btn">Login</button>
         </form>
+
+        <a href="/guest-login" class="guest-btn">Continue as Guest</a>
 
         <div class="extras">
             <a href="/">Back to Home</a>

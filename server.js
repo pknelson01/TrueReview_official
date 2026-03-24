@@ -337,6 +337,16 @@ app.get("/signup", (req, res) => {
   res.sendFile(path.join(__dirname, "views/signup.html"));
 });
 
+app.get("/guest-login", async (req, res) => {
+  const result = await db.query("SELECT * FROM users WHERE email = $1", ["guest@truereview.com"]);
+  if (result.rows.length === 0) return res.redirect("/login?error=1");
+  const user = result.rows[0];
+  const passwordMatch = await bcrypt.compare("guest", user.password);
+  if (!passwordMatch) return res.redirect("/login?error=1");
+  req.session.user_id = user.user_id;
+  res.redirect("/welcome");
+});
+
 // SIGNUP - CREATE NEW ACCOUNT
 app.post("/signup", async (req, res) => {
   const { username, display_name, email, password } = req.body;
