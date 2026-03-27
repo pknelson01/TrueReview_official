@@ -396,6 +396,27 @@
             transform: translateY(-2px);
         }
 
+        .favorite-btn {
+            width: 100%;
+            font-family: 'Oswald', sans-serif;
+            font-size: 16px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 18px;
+            background: transparent;
+            color: #f5c518;
+            border: 2px solid #f5c518;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .favorite-btn:hover {
+            background: #f5c518;
+            color: var(--charcoal);
+            transform: translateY(-2px);
+        }
+
         .delete-btn {
             width: 100%;
             font-family: 'Oswald', sans-serif;

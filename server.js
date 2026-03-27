@@ -707,6 +707,60 @@ app.get("/api/dashboard", requireLogin, async (req, res) => {
 });
 
 // ============================================================================
+// API — SET FAVORITE MOVIE
+// ============================================================================
+app.post("/api/set-favorite", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { watched_id } = req.body;
+  try {
+    // Get the movie_id from the watched entry
+    const watchedResult = await db.query(
+      "SELECT movie_id FROM watched_list WHERE watched_id = $1 AND user_id = $2",
+      [watched_id, user_id]
+    );
+    if (watchedResult.rows.length === 0) {
+      return res.status(404).json({ error: "Watched entry not found" });
+    }
+    const movie_id = watchedResult.rows[0].movie_id;
+
+    // Get current favorite movie title (if any) for the response
+    const currentFavResult = await db.query(
+      `SELECT am.movie_title FROM users u
+       LEFT JOIN all_movies am ON am.movie_id = u.favorite_movie
+       WHERE u.user_id = $1`,
+      [user_id]
+    );
+    const currentFavorite = currentFavResult.rows[0]?.movie_title || null;
+
+    // Set as favorite
+    await db.query("UPDATE users SET favorite_movie = $1 WHERE user_id = $2", [movie_id, user_id]);
+    console.log(`[FAVORITE] User ${user_id} set favorite movie to movie_id ${movie_id}`);
+    res.json({ success: true, previousFavorite: currentFavorite });
+  } catch (error) {
+    console.error("[FAVORITE] Error:", error);
+    res.status(500).json({ error: "Failed to set favorite movie" });
+  }
+});
+
+// ============================================================================
+// API — GET CURRENT FAVORITE MOVIE TITLE
+// ============================================================================
+app.get("/api/current-favorite", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  try {
+    const result = await db.query(
+      `SELECT am.movie_title FROM users u
+       LEFT JOIN all_movies am ON am.movie_id = u.favorite_movie
+       WHERE u.user_id = $1`,
+      [user_id]
+    );
+    res.json({ title: result.rows[0]?.movie_title || null });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch favorite" });
+  }
+});
+
+// ============================================================================
 // API — WATCHED LIST DATA
 // ============================================================================
 app.get("/api/watched", requireLogin, async (req, res) => {
