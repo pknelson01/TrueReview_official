@@ -1,0 +1,304 @@
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --concrete: #525252;
+            --steel: #A8A8A8;
+            --white: #FFFFFF;
+            --charcoal: #2B2B2B;
+            --off-white: #E8E8E8;
+        }
+
+        body {
+            font-family: 'Anonymous Pro', monospace;
+            background: var(--concrete);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .quiz-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--charcoal);
+            border: 4px solid var(--white);
+            padding: 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-family: 'Oswald', sans-serif;
+            color: var(--white);
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--steel);
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--steel);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--white);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--white);
+            padding: 30px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-number {
+            font-family: 'Oswald', sans-serif;
+            color: var(--steel);
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .question-text {
+            font-family: 'Oswald', sans-serif;
+            color: var(--off-white);
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            background: rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--steel);
+            padding: 18px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.05em;
+            color: var(--off-white);
+        }
+
+        .option:hover {
+            border-color: var(--white);
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .option.selected {
+            border-color: var(--white);
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .option.correct {
+            border-color: #4CAF50;
+            background: #4CAF50;
+            color: white;
+        }
+
+        .option.incorrect {
+            border-color: #ff6666;
+            background: #ff6666;
+            color: white;
+        }
+
+        .option.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+        }
+
+        .btn {
+            font-family: 'Oswald', sans-serif;
+            padding: 12px 30px;
+            border: 2px solid var(--white);
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            background: transparent;
+            color: var(--white);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--white);
+            border-color: var(--steel);
+        }
+
+        .btn-secondary:hover {
+            background: var(--steel);
+            border-color: var(--steel);
+        }
+
+        .results-card {
+            display: none;
+            text-align: center;
+        }
+
+        .results-card.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            margin: 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .score-excellent { background: #4CAF50; border: 3px solid var(--white); }
+        .score-good { background: var(--white); color: var(--charcoal); border: 3px solid var(--white); }
+        .score-average { background: #FFA726; border: 3px solid var(--white); }
+        .score-poor { background: #ff6666; border: 3px solid var(--white); }
+
+        .results-message {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .results-details {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--white);
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--steel);
+            font-size: 1.1em;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-family: 'Oswald', sans-serif;
+            color: var(--steel);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+        }
+
+        .detail-value {
+            color: var(--off-white);
+            font-weight: 600;
+        }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 12px;
+            font-size: 0.95em;
+            display: none;
+            border: 2px solid;
+        }
+
+        .feedback.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .feedback.correct {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+            border-color: #4CAF50;
+        }
+
+        .feedback.incorrect {
+            background: rgba(255, 102, 102, 0.2);
+            color: #ff6666;
+            border-color: #ff6666;
+        }
+    

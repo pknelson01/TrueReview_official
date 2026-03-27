@@ -1,377 +1,1190 @@
-/* PAGE BACKGROUND */
-body {
-    background: #f8f7f2;
-    color: black;
-    font-family: "Times New Roman", serif;
-}
-
-/* DASHBOARD CONTENT */
-.dashboard-container {
-    max-width: 1000px;
-    margin: 0 auto;
-}
-
-/* HEADER SECTION */
-.profile-header {
-    position: relative;
-    height: 260px;
-    background: #ddd;
-    border-bottom: 2px solid #bbb;
-
-    /* Ensure profile pic can overlap */
-    overflow: visible;
-}
-
-.background-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.background-placeholder {
-    width: 100%;
-    height: 100%;
-    background: #ccc;
-}
-
-/* PROFILE PIC — MUST FLOAT OVER HEADER (LinkedIn-style) */
-.profile-pic-wrapper {
-    position: absolute !important;
-    bottom: -65px !important;
-    left: 40px !important;
-
-    width: 130px;
-    height: 130px;
-
-    padding: 5px;
-    border-radius: 50%;
-    background: white;
-
-    /* border: 3px solid #ffd966; */
-
-    z-index: 20 !important; /* ensure it's on top */
-}
-
-.profile-pic-wrapper .edit-overlay {
-    border-radius: 50%;
-}
-
-.profile-pic {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.profile-placeholder {
-    width: 100%;
-    height: 100%;
-    background: #444;
-    color: white;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 32px;
-    border-radius: 50%;
-}
-
-/* FLEX LAYOUT: PROFILE INFO LEFT + LAST WATCHED RIGHT */
-.profile-flex-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 60px;
-
-    /* margin-top: 80px; /* compensates for floating profile pic */
-}
-
-/* PROFILE INFO */
-.profile-info {
-    flex: 1;
-    padding-left: 40px;
-}
-
-.username {
-    font-size: 40px;
-    font-weight: bold;
-    margin-top: 6px !important;
-    margin-bottom: 6px !important;
-}
-
-.user-title {
-    font-size: 18px;
-    color: gray;
-    font-style: italic;
-    margin-top: 2px !important;
-    margin-bottom: 6px !important;
-}
-
-.user-bio {
-    font-size: 18px;
-    line-height: 1;
-    margin-top: 6px !important;
-    margin-bottom: 6px !important;
-}
-
-.follow-stats {
-    font-size: 16px;
-    margin-top: 6px !important;
-    margin-bottom: 6px !important;
-}
-
-.movie-stats p {
-    font-size: 16px;
-    margin-top: 2px !important;
-    margin-bottom: 2px !important;
-}
-
-.favorite {
-    margin-top: 2px !important;
-    margin-bottom: 2px !important;
-    font-size: 16px;
-}
-
-.favorite span {
-    color: #0a66c2;
-    font-weight: bold;
-    margin-top: 2px !important;
-    margin-bottom: 2px !important;
-}
-
-/* LAST WATCHED (RIGHT COLUMN) */
-.last-watched {
-    width: 260px;
-    text-align: center;
-}
-
-.last-poster {
-    width: 102px;
-    border-radius: 12px;
-    margin-bottom: 15px;
-    border: 3px solid #0a66c2;
-}
-
-.last-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-top: 10px;
-}
-
-.rating-line {
-    color: #444;
-    font-size: 16px;
-}
-
-
-/* -----------------------------------------
-   PROFILE PIC EDIT OVERLAY (hover dim + pencil)
------------------------------------------- */
-
-.pfp-edit-zone {
-    position: relative;
-    cursor: pointer;
-}
-
-.pfp-edit-zone:hover .edit-overlay {
-    opacity: 1;
-}
-
-.edit-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.45);
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: inherit;
-}
-
-.edit-overlay i {
-    font-size: 32px;
-    color: white;
-}
-
-
-
-/* -----------------------------------------
-   BACKGROUND HEADER HOVER OVERLAY
------------------------------------------- */
-
-.bg-edit-zone {
-    position: relative;
-}
-
-.bg-edit-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    background: rgba(0,0,0,0.35);
-    opacity: 0;
-    transition: opacity 0.25s ease;
-
-    border-radius: inherit;
-
-    /* prevent overlay from intercepting clicks unless visible */
-    pointer-events: none;
-}
-
-/* Show overlay only on hover */
-.bg-edit-zone:hover > .bg-edit-overlay {
-    opacity: 1;
-    pointer-events: auto; /* enables click when visible */
-}
-
-.bg-edit-overlay i {
-    font-size: 42px;
-    color: white;
-    pointer-events: none; /* icon shouldn’t block clicking */
-}
-
-
-
-/* ----------------------------------------------------------
-   FIX: Prevent background overlay from activating on PFP hover
------------------------------------------------------------ */
-
-/* Do NOT trigger background hover when pointer is over PFP */
-.pfp-edit-zone:hover {
-    pointer-events: auto;
-}
-
-/* Disable background overlay whenever PFP is hovered */
-.pfp-edit-zone:hover ~ .bg-edit-overlay {
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
-
-/* -----------------------------------------
-   LINKEDIN-STYLE CONTENT CARD (Option A)
------------------------------------------- */
-.content-card {
-    background: white;
-    border-radius: 12px;
-    padding: 40px;
-
-    /* space between header and card */
-    margin-top: 10px;
-
-    box-shadow: 0 4px 18px rgba(0,0,0,0.12);
-    position: relative;
-}
-
-/* Ensure spacing looks good with floating profile picture */
-.content-card .profile-info {
-    margin-top: 60px;
-}
-
-/* ============================================================
-   RESPONSIVE — iPad (max-width: 768px)
-   ============================================================ */
-@media (max-width: 768px) {
-    .dashboard-container {
-        max-width: 100%;
-        padding: 0 16px;
-    }
-
-    .profile-header {
-        height: 200px;
-    }
-
-    .profile-pic-wrapper {
-        width: 110px;
-        height: 110px;
-        bottom: -55px !important;
-        left: 20px !important;
-    }
-
-    .content-card {
-        padding: 28px 20px;
-    }
-
-    .content-card .profile-info {
-        margin-top: 50px;
-    }
-
-    .profile-flex-row {
-        gap: 30px;
-    }
-
-    .profile-info {
-        padding-left: 20px;
-    }
-
-    .username {
-        font-size: 32px;
-    }
-
-    .last-watched {
-        width: 200px;
-    }
-}
-
-/* ============================================================
-   RESPONSIVE — iPhone (max-width: 480px)
-   ============================================================ */
-@media (max-width: 480px) {
-    .profile-header {
-        height: 160px;
-    }
-
-    .profile-pic-wrapper {
-        width: 90px;
-        height: 90px;
-        bottom: -45px !important;
-        left: 16px !important;
-    }
-
-    .content-card {
-        padding: 20px 16px;
-    }
-
-    .content-card .profile-info {
-        margin-top: 40px;
-    }
-
-    .profile-flex-row {
-        flex-direction: column;
-        gap: 20px;
-    }
-
-    .profile-info {
-        padding-left: 16px;
-    }
-
-    .username {
-        font-size: 26px;
-    }
-
-    .user-title {
-        font-size: 15px;
-    }
-
-    .user-bio {
-        font-size: 15px;
-    }
-
-    .last-watched {
-        width: 100%;
-    }
-
-    .last-poster {
-        width: 80px;
-    }
-
-    .bg-edit-overlay i {
-        font-size: 30px;
-    }
-
-    .edit-overlay i {
-        font-size: 24px;
-    }
-}
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --truereview: #525252;
+            --steel: #A8A8A8;
+            --white: #FFFFFF;
+            --charcoal: #2B2B2B;
+            --off-white: #E8E8E8;
+        }
+
+        body {
+            font-family: 'Anonymous Pro', monospace;
+            background: var(--truereview);
+            color: var(--off-white);
+            line-height: 1.5;
+            position: relative;
+            min-height: 100vh;
+            padding-top: 95px; /* Header height (55px) + tab bar (40px) */
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 100px 100px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .mobile-header { display: none; }
+        .mobile-menu { display: none; }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-bar {
+            background: var(--white);
+            border-bottom: 4px solid var(--charcoal);
+            padding: 0;
+            display: grid;
+            grid-template-columns: 120px 1fr 120px;
+            height: 55px;
+        }
+
+        .logo-section {
+            background: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo {
+            font-family: 'Oswald', sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--charcoal);
+            letter-spacing: -2px;
+            text-decoration: none;
+        }
+
+        .center-info {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            position: relative;
+            gap: 20px;
+        }
+
+        .site-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            color: var(--charcoal);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            white-space: nowrap;
+        }
+
+        .header-search {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-btn {
+            background: transparent;
+            border: 1px solid var(--charcoal);
+            color: var(--charcoal);
+            padding: 6px 12px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .search-btn:hover {
+            background: var(--charcoal);
+            color: var(--white);
+            border-color: var(--charcoal);
+        }
+
+        .status-text {
+            position: absolute;
+            right: 20px;
+            font-size: 9px;
+            color: var(--charcoal);
+            letter-spacing: 2px;
+        }
+
+        .coordinates {
+            font-size: 12px;
+            color: var(--white);
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        .status-section {
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-left: 2px solid var(--charcoal);
+            position: relative;
+            padding: 8px;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 1px solid var(--charcoal);
+            color: var(--charcoal);
+            padding: 6px 12px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--charcoal);
+            color: var(--white);
+            border-color: var(--charcoal);
+        }
+
+        .tab-bar {
+            background: var(--charcoal);
+            border-bottom: 2px solid var(--white);
+            height: 40px;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .tab {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border-right: 2px solid var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Oswald', sans-serif;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--steel);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            text-decoration: none;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+        }
+
+        .tab.active {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--white);
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .profile-section {
+            background: var(--charcoal);
+            border: 2px solid var(--white);
+            padding: 0;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            background: var(--white);
+            padding: 20px;
+            border-bottom: 2px solid var(--charcoal);
+            position: relative;
+        }
+
+        .profile-label {
+            font-family: 'Oswald', sans-serif;
+            font-size: 12px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--charcoal);
+            font-weight: 600;
+        }
+
+        .add-movie-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: var(--charcoal);
+            border: 2px solid var(--charcoal);
+            color: var(--white);
+            padding: 8px 16px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .add-movie-btn:hover {
+            background: var(--white);
+            color: var(--charcoal);
+            transform: translateY(-2px);
+        }
+
+        .profile-body {
+            padding: 15px;
+        }
+
+        .top-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--white);
+            align-items: end;
+        }
+
+        .user-info-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .profile-picture-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .profile-picture {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, var(--charcoal) 0%, #1a1a1a 100%), url('/TrueReview_logo/Icon_BW.png');
+            background-size: cover;
+            background-position: center;
+            border: 3px solid var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Oswald', sans-serif;
+            font-size: 48px;
+            color: var(--white);
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .profile-picture img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-picture .edit-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(43, 43, 43, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-picture:hover .edit-overlay {
+            opacity: 1;
+        }
+
+        .profile-picture .edit-overlay i {
+            color: var(--white);
+            font-size: 32px;
+        }
+
+        .username {
+            font-family: 'Anonymous Pro', monospace;
+            font-size: 14px;
+            color: var(--steel);
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .user-display-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--off-white);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .user-title {
+            font-size: 14px;
+            font-style: italic;
+            color: var(--steel);
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-left: 3px solid var(--white);
+        }
+
+        .stat-box.clickable {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .stat-box.clickable:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-left-color: var(--off-white);
+        }
+
+        .stat-number {
+            font-family: 'Oswald', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--white);
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--steel);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--charcoal);
+            border: 2px solid var(--white);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 2px solid var(--white);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background: var(--charcoal);
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: 1px solid var(--white);
+            color: var(--white);
+            padding: 6px 12px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--steel);
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .user-item:hover {
+            border-color: var(--white);
+        }
+
+        .user-item-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid var(--white);
+            object-fit: cover;
+            background: url('/TrueReview_logo/Icon_BW.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .user-username {
+            font-family: 'Oswald', sans-serif;
+            font-size: 18px;
+            color: var(--white);
+            letter-spacing: 1px;
+        }
+
+        .follow-btn {
+            background: var(--white);
+            border: 2px solid var(--white);
+            color: var(--charcoal);
+            padding: 8px 16px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .follow-btn:hover {
+            background: var(--off-white);
+        }
+
+        .following-btn {
+            background: transparent;
+            border: 2px solid var(--white);
+            color: var(--white);
+            padding: 8px 16px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .following-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .empty-list {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--steel);
+            font-size: 16px;
+        }
+
+        .movies-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .movie-container {
+            display: flex;
+            flex-direction: column;
+            width: fit-content;
+            margin: 0 auto;
+        }
+
+        .movie-badge {
+            background: var(--white);
+            color: var(--charcoal);
+            padding: 8px 12px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+            border: 2px solid var(--white);
+        }
+
+        /* Default: Padding-bottom fallback (works everywhere, Safari uses this) */
+        .movie-display {
+            position: relative;
+            width: 100%;
+            max-width: 253px; /* 380px * (2/3) = 253px */
+            background: var(--charcoal);
+            border: 2px solid var(--white);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .movie-display::before {
+            content: '';
+            display: block;
+            padding-bottom: 150%; /* 2:3 aspect ratio */
+        }
+
+        .movie-poster {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(43, 43, 43, 0.5) 0%, rgba(26, 26, 26, 0.5) 100%), url('/TrueReview_logo/Poster_BW.png');
+            background-size: cover;
+            background-position: center;
+            font-family: 'Oswald', sans-serif;
+            font-size: 72px;
+            color: var(--steel);
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Progressive Enhancement: Modern browsers with working aspect-ratio (Chrome) */
+        @supports (aspect-ratio: 2/3) {
+            .movie-display {
+                aspect-ratio: 2/3;
+                max-height: 380px;
+                max-width: none;
+            }
+
+            .movie-display::before {
+                display: none; /* Remove padding-bottom trick */
+            }
+
+            .movie-poster {
+                position: relative;
+                width: 100%;
+                height: 100%;
+            }
+        }
+
+        .movie-display:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+        }
+
+        .movie-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+        }
+
+        .movie-display:hover .movie-poster {
+            opacity: 0.75;
+        }
+
+        .movie-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(43, 43, 43, 0.75);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .movie-display:hover .movie-info {
+            opacity: 1;
+        }
+
+        .rating-display {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--white);
+            line-height: 1;
+        }
+
+        .rating-label {
+            position: absolute;
+            top: 45px;
+            right: 10px;
+            font-size: 8px;
+            color: var(--steel);
+            letter-spacing: 2px;
+        }
+
+        .movie-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--off-white);
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            line-height: 1.1;
+            margin-bottom: 10px;
+        }
+
+        .movie-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .meta-item {
+            display: flex;
+            border-left: 3px solid var(--white);
+            padding-left: 15px;
+        }
+
+        .meta-label {
+            font-size: 10px;
+            color: var(--steel);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            width: 70px;
+        }
+
+        .meta-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            color: var(--off-white);
+        }
+
+        .bio-section {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-left: 3px solid var(--white);
+        }
+
+        .bio-label {
+            font-size: 9px;
+            color: var(--steel);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .bio-text {
+            font-size: 13px;
+            line-height: 1.4;
+            color: var(--off-white);
+        }
+
+        /* COMMENTED OUT - Watched List Section CSS
+        .watched-list-section {
+            background: var(--charcoal);
+            border: 2px solid var(--white);
+            padding: 0;
+            max-width: 1400px;
+            margin: 60px auto 0;
+        }
+
+        .watched-header {
+            padding: 40px;
+            border-bottom: 2px solid var(--white);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .watched-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--off-white);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .total-entries {
+            font-size: 14px;
+            color: var(--white);
+            letter-spacing: 2px;
+        }
+
+        .watched-body {
+            padding: 40px;
+        }
+
+        .watched-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 30px;
+        }
+
+        .watched-entry {
+            position: relative;
+            aspect-ratio: 2/3;
+            background: var(--charcoal);
+            border: 2px solid var(--white);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .watched-entry:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+            border-color: var(--white);
+        }
+
+        .watched-poster {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--charcoal) 0%, #1a1a1a 100%);
+            font-family: 'Oswald', sans-serif;
+            font-size: 72px;
+            color: var(--steel);
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .watched-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 1;
+        }
+
+        .watched-entry:hover .watched-poster {
+            opacity: 0.75;
+        }
+
+        .watched-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(43, 43, 43, 0.75);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .watched-entry:hover .watched-info {
+            opacity: 1;
+        }
+
+        .watched-entry-number {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 18px;
+            color: var(--white);
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .watched-entry:hover .watched-entry-number {
+            opacity: 1;
+        }
+
+        .empty-msg {
+            text-align: center;
+            color: var(--steel);
+            font-size: 18px;
+            padding: 60px 20px;
+        }
+        END COMMENTED OUT */
+
+        .kernels-delta {
+            position: absolute;
+            top: -10px;
+            right: -60px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .kernels-delta.positive {
+            color: #44ff44;
+        }
+
+        .kernels-delta.negative {
+            color: #ff4444;
+        }
+
+        .kernels-delta.show {
+            opacity: 1;
+            animation: deltaFloat 3s ease-out forwards;
+        }
+
+        .ten-star-delta {
+            position: absolute;
+            top: -10px;
+            right: -60px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .ten-star-delta.positive {
+            color: #44ff44;
+        }
+
+        .ten-star-delta.negative {
+            color: #ff4444;
+        }
+
+        .ten-star-delta.show {
+            opacity: 1;
+            animation: deltaFloat 3s ease-out forwards;
+        }
+
+        @keyframes deltaFloat {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            70% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-20px) scale(0.8);
+                opacity: 0;
+            }
+        }
+
+        @keyframes numberPulsePositive {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+                color: #44ff44;
+            }
+        }
+
+        @keyframes numberPulseNegative {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+                color: #ff4444;
+            }
+        }
+
+        .stat-number.animate-positive {
+            animation: numberPulsePositive 0.6s ease-out;
+        }
+
+        .stat-number.animate-negative {
+            animation: numberPulseNegative 0.6s ease-out;
+        }
+
+        /* ============================================================
+           RESPONSIVE — iPad (max-width: 768px)
+           ============================================================ */
+        @media (max-width: 768px) {
+            body {
+                padding-top: 80px;
+            }
+
+            /* Header */
+            .header-bar {
+                grid-template-columns: 80px 1fr 80px;
+                height: 48px;
+            }
+            .logo { font-size: 20px; }
+            .center-info { padding: 0 15px; gap: 10px; }
+            .site-title { font-size: 11px; letter-spacing: 2px; }
+            .tab { font-size: 9px; letter-spacing: 1px; }
+            .tab-bar { height: 32px; }
+
+            /* Dashboard content */
+            .main-content { padding: 20px; }
+            .top-section {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .movies-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+            .profile-body { padding: 12px; }
+            .stat-number { font-size: 22px; }
+        }
+
+        /* ============================================================
+           RESPONSIVE — iPhone (max-width: 480px)
+           ============================================================ */
+        @media (max-width: 480px) {
+            body {
+                padding-top: 48px;
+            }
+
+            /* Header */
+            .header-bar {
+                grid-template-columns: 60px 1fr 60px;
+                height: 42px;
+            }
+            .logo { font-size: 16px; }
+            .center-info { padding: 0 8px; gap: 6px; }
+            .site-title { display: none; }
+            .search-btn { font-size: 9px; padding: 4px 8px; }
+            .logout-btn { font-size: 9px; padding: 4px 8px; }
+            .tab { font-size: 7px; letter-spacing: 0.5px; }
+            .tab-bar { height: 28px; }
+
+            /* Dashboard content */
+            .main-content { padding: 12px; }
+            .profile-body { padding: 10px; }
+            .top-section {
+                grid-template-columns: 1fr;
+            }
+            .profile-picture {
+                width: 90px;
+                height: 90px;
+                font-size: 36px;
+            }
+            .user-display-name { font-size: 20px; }
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .stat-number { font-size: 20px; }
+            .stat-label { font-size: 8px; letter-spacing: 1px; }
+            .movies-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .movie-badge { font-size: 9px; padding: 6px 10px; }
+            .bio-section { padding: 12px; }
+            .bio-text { font-size: 12px; }
+            .add-movie-btn { font-size: 9px; padding: 6px 12px; }
+            .modal-content { width: 95%; }
+            .modal-title { font-size: 18px; }
+
+            /* Hamburger menu */
+            .header-bar { display: none; }
+            .tab-bar { display: none; }
+
+            .mobile-header {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--white, #FFFFFF);
+                height: 48px;
+                border-bottom: 3px solid var(--charcoal, #2B2B2B);
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 1001;
+            }
+
+            .hamburger-btn {
+                position: absolute;
+                left: 16px;
+                background: none;
+                border: none;
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                padding: 4px;
+            }
+
+            .hamburger-btn span {
+                display: block;
+                width: 22px;
+                height: 2px;
+                background: var(--charcoal, #2B2B2B);
+                transition: all 0.3s ease;
+            }
+
+            .hamburger-btn.active span:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+            }
+            .hamburger-btn.active span:nth-child(2) {
+                opacity: 0;
+            }
+            .hamburger-btn.active span:nth-child(3) {
+                transform: rotate(-45deg) translate(5px, -5px);
+            }
+
+            .mobile-logo {
+                font-family: 'Oswald', sans-serif;
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--charcoal, #2B2B2B);
+                letter-spacing: -2px;
+                text-decoration: none;
+            }
+
+            .mobile-menu {
+                display: none;
+                position: fixed;
+                top: 48px;
+                left: 0;
+                right: 0;
+                background: var(--charcoal, #2B2B2B);
+                border-bottom: 2px solid var(--white, #FFFFFF);
+                z-index: 999;
+                flex-direction: column;
+            }
+
+            .mobile-menu.active {
+                display: flex;
+            }
+
+            .mobile-menu a,
+            .mobile-menu span {
+                padding: 14px 24px;
+                font-family: 'Oswald', sans-serif;
+                font-size: 14px;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: var(--off-white, #E8E8E8);
+                text-decoration: none;
+                border-bottom: 1px solid rgba(255,255,255,0.15);
+                transition: background 0.2s ease;
+            }
+
+            .mobile-menu a:hover {
+                background: rgba(255,255,255,0.1);
+            }
+
+            .mobile-menu span {
+                color: var(--steel, #A8A8A8);
+                font-size: 12px;
+            }
+
+            .mobile-menu .mobile-logout {
+                background: none;
+                border: none;
+                border-bottom: 1px solid rgba(255,255,255,0.15);
+                padding: 14px 24px;
+                font-family: 'Oswald', sans-serif;
+                font-size: 14px;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: #ff6666;
+                cursor: pointer;
+                text-align: left;
+                width: 100%;
+            }
+
+            .mobile-menu .mobile-logout:hover {
+                background: rgba(255,255,255,0.1);
+            }
+        }
+    

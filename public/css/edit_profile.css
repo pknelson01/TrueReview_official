@@ -229,7 +229,7 @@
             padding: 60px;
         }
 
-        .movie-detail-section {
+        .profile-section {
             background: var(--charcoal);
             border: 2px solid var(--white);
             padding: 0;
@@ -237,14 +237,14 @@
             margin: 0 auto;
         }
 
-        .movie-detail-header {
+        .profile-header {
             background: var(--white);
             padding: 30px;
             border-bottom: 2px solid var(--charcoal);
             position: relative;
         }
 
-        .detail-label {
+        .profile-label {
             font-family: 'Oswald', sans-serif;
             font-size: 14px;
             letter-spacing: 3px;
@@ -253,153 +253,132 @@
             font-weight: 600;
         }
 
-        .back-btn {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            background: transparent;
-            border: 2px solid var(--charcoal);
-            color: var(--charcoal);
-            padding: 12px 24px;
-            font-family: 'Oswald', sans-serif;
-            font-size: 14px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
+        .profile-body {
+            padding: 40px;
         }
 
-        .back-btn:hover {
-            background: var(--charcoal);
-            color: var(--white);
-        }
-
-        .movie-detail-body {
-            padding: 60px;
-        }
-
-        .movie-layout {
-            display: grid;
-            grid-template-columns: 400px 1fr;
-            gap: 60px;
-        }
-
-        .poster-column {
+        .profile-picture-container {
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 30px;
         }
 
-        .poster-container {
-            position: relative;
-            aspect-ratio: 2/3;
-            width: 100%;
-            background: var(--charcoal);
+        .profile-picture {
+            width: 200px;
+            height: 200px;
             border: 3px solid var(--white);
+            background: var(--steel);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Oswald', sans-serif;
+            font-size: 72px;
+            font-weight: 700;
+            color: var(--charcoal);
+            position: relative;
+            cursor: pointer;
             overflow: hidden;
         }
 
-        .movie-poster {
+        .profile-picture img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            background: url('/TrueReview_logo/Poster_BW.png');
-            background-size: cover;
-            background-position: center;
         }
 
-        .info-column {
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
+        .edit-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            text-align: center;
+            color: var(--white);
+            font-size: 18px;
         }
 
-        .movie-title-display {
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-label {
             font-family: 'Oswald', sans-serif;
-            font-size: 56px;
-            font-weight: 700;
-            color: var(--off-white);
-            text-transform: uppercase;
-            letter-spacing: -2px;
-            line-height: 1.1;
-            border-bottom: 3px solid var(--white);
-            padding-bottom: 20px;
-        }
-
-        .movie-meta-section {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-
-        .meta-box {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 25px;
-            border-left: 3px solid var(--white);
-        }
-
-        .meta-label {
-            font-size: 10px;
-            color: var(--steel);
+            font-size: 12px;
             letter-spacing: 2px;
             text-transform: uppercase;
+            color: var(--steel);
+            display: block;
             margin-bottom: 10px;
         }
 
-        .meta-value {
-            font-family: 'Oswald', sans-serif;
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--white);
-            line-height: 1;
-        }
-
-        .overview-section {
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            font-family: 'Anonymous Pro', monospace;
             background: rgba(0, 0, 0, 0.3);
-            padding: 30px;
-            border-left: 3px solid var(--white);
-        }
-
-        .overview-label {
-            font-size: 10px;
-            color: var(--steel);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 15px;
-        }
-
-        .overview-text {
-            font-size: 16px;
-            line-height: 1.8;
+            border: 2px solid var(--steel);
             color: var(--off-white);
+            padding: 15px;
+            font-size: 16px;
+            transition: all 0.3s ease;
         }
 
-        .action-section {
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--white);
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .button-group {
             display: flex;
             gap: 20px;
-            margin-top: 20px;
+            margin-top: 40px;
         }
 
-        .rate-btn {
-            background: var(--white);
-            color: var(--charcoal);
-            border: 2px solid var(--white);
-            padding: 16px 32px;
+        .save-btn,
+        .cancel-btn {
+            flex: 1;
             font-family: 'Oswald', sans-serif;
             font-size: 16px;
             letter-spacing: 2px;
             text-transform: uppercase;
+            padding: 18px;
+            border: 2px solid var(--white);
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
-            display: inline-block;
-            font-weight: 700;
+            text-align: center;
+            display: block;
         }
 
-        .rate-btn:hover {
+        .save-btn {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .save-btn:hover {
             background: transparent;
             color: var(--white);
+            transform: translateY(-2px);
+        }
+
+        .cancel-btn {
+            background: transparent;
+            color: var(--white);
+        }
+
+        .cancel-btn:hover {
+            background: var(--white);
+            color: var(--charcoal);
             transform: translateY(-2px);
         }
 
@@ -417,10 +396,9 @@
             body { padding-top: 80px; }
 
             .main-content { padding: 30px; }
-            .movie-detail-body { padding: 30px; }
-            .movie-layout { grid-template-columns: 250px 1fr; gap: 30px; }
-            .movie-title-display { font-size: 40px; }
-            .meta-value { font-size: 24px; }
+            .profile-body { padding: 25px; }
+            .profile-picture { width: 150px; height: 150px; font-size: 54px; }
+            .button-group { flex-direction: column; gap: 12px; }
         }
 
         /* iPhone */
@@ -439,15 +417,9 @@
             body { padding-top: 48px; }
 
             .main-content { padding: 16px; }
-            .movie-detail-body { padding: 20px; }
-            .movie-layout { grid-template-columns: 1fr; gap: 30px; }
-            .poster-container { max-width: 250px; margin: 0 auto; }
-            .movie-title-display { font-size: 32px; }
-            .movie-meta-section { grid-template-columns: 1fr; gap: 15px; }
-            .meta-value { font-size: 24px; }
-            .overview-text { font-size: 14px; }
-            .back-btn { position: static; margin-top: 15px; display: inline-block; }
-            .action-section { flex-direction: column; }
+            .profile-body { padding: 20px; }
+            .profile-picture { width: 120px; height: 120px; font-size: 42px; }
+            .form-input, .form-textarea, .form-select { padding: 12px; font-size: 14px; }
 
             /* Hamburger menu */
             .header-bar { display: none; }

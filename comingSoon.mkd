@@ -1,5 +1,4 @@
 Include the following features from TMDb:
-
   - Top-n Page
     - Streaming service
     - top-n movies
@@ -18,4 +17,3 @@ Include the following features from TMDb:
     - add a magnifying glass and workshop ways to make pop more
   - Format idea:
     - add another content box inside following page and retitle to "Home (with home icon)" and inside the new content box, have a search bar and below have the popular movies listed out
-

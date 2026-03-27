@@ -53,7 +53,7 @@
             z-index: 0;
         }
 
-        .login-wrapper {
+        .signup-wrapper {
             position: relative;
             z-index: 1;
             background: var(--charcoal);
@@ -63,7 +63,7 @@
             width: 100%;
         }
 
-        .login-title {
+        .signup-title {
             font-family: 'Oswald', sans-serif;
             font-size: 42px;
             font-weight: 700;
@@ -85,15 +85,20 @@
             font-size: 14px;
             letter-spacing: 1px;
             text-align: center;
+            display: none;
         }
 
-        .login-form {
+        .error-box.show {
+            display: block;
+        }
+
+        .signup-form {
             display: flex;
             flex-direction: column;
             gap: 25px;
         }
 
-        .login-form label {
+        .signup-form label {
             font-family: 'Oswald', sans-serif;
             font-size: 12px;
             letter-spacing: 2px;
@@ -102,7 +107,7 @@
             margin-bottom: -15px;
         }
 
-        .login-form input {
+        .signup-form input {
             font-family: 'Anonymous Pro', monospace;
             background: rgba(0, 0, 0, 0.3);
             border: 2px solid var(--steel);
@@ -112,13 +117,13 @@
             transition: all 0.3s ease;
         }
 
-        .login-form input:focus {
+        .signup-form input:focus {
             outline: none;
             border-color: var(--white);
             background: rgba(0, 0, 0, 0.5);
         }
 
-        .login-btn {
+        .signup-btn {
             font-family: 'Oswald', sans-serif;
             font-size: 16px;
             letter-spacing: 2px;
@@ -132,7 +137,7 @@
             margin-top: 15px;
         }
 
-        .login-btn:hover {
+        .signup-btn:hover {
             background: transparent;
             color: var(--white);
             transform: translateY(-2px);
@@ -156,66 +161,39 @@
         .extras a:hover {
             color: var(--white);
         }
-
-        .guest-btn {
-            display: block;
-            width: 100%;
-            font-family: 'Oswald', sans-serif;
-            font-size: 14px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            padding: 16px;
-            background: transparent;
-            color: var(--steel);
-            border: 2px solid var(--steel);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            text-decoration: none;
-            margin-top: 12px;
-        }
-
-        .guest-btn:hover {
-            border-color: var(--white);
-            color: var(--white);
-        }
         /* RESPONSIVE — iPad */
         @media (max-width: 768px) {
-            .login-wrapper {
+            .signup-wrapper {
                 padding: 50px 50px;
                 margin: 0 20px;
             }
-            .login-title {
+            .signup-title {
                 font-size: 36px;
             }
         }
 
         /* RESPONSIVE — iPhone */
         @media (max-width: 480px) {
-            .login-wrapper {
+            .signup-wrapper {
                 padding: 30px 20px;
                 margin: 0 12px;
                 border-width: 3px;
             }
-            .login-title {
+            .signup-title {
                 font-size: 28px;
                 margin-bottom: 25px;
                 padding-bottom: 15px;
             }
-            .login-form {
+            .signup-form {
                 gap: 18px;
             }
-            .login-form input {
+            .signup-form input {
                 padding: 12px;
                 font-size: 14px;
             }
-            .login-btn {
+            .signup-btn {
                 padding: 14px;
                 font-size: 14px;
-            }
-            .guest-btn {
-                padding: 12px;
-                font-size: 12px;
             }
         }
     
