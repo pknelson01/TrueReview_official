@@ -14,7 +14,8 @@
     <div class="login-wrapper">
         <h2 class="login-title">Login</h2>
 
-        <div class="error-box" style="display:none;">Invalid login</div>
+        <div class="error-box" id="errorBox"></div>
+        <div class="success-box" id="successBox"></div>
 
         <form action="/login" method="POST" class="login-form">
             <label>Email</label>
@@ -29,8 +30,28 @@
         <a href="/guest-login" class="guest-btn">Continue as Guest</a>
 
         <div class="extras">
+            <a href="/forgot-password">Forgot Password?</a>
+            <span style="margin: 0 10px; color: var(--steel);">|</span>
             <a href="/">Back to Home</a>
         </div>
     </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const error = params.get('error');
+        const errorBox = document.getElementById('errorBox');
+        if (error === 'invalid_email') {
+            errorBox.textContent = 'Please enter a valid email address.';
+            errorBox.classList.add('show');
+        } else if (error) {
+            errorBox.textContent = 'Incorrect email or password.';
+            errorBox.classList.add('show');
+        }
+        const successBox = document.getElementById('successBox');
+        if (params.get('reset') === '1') {
+            successBox.textContent = 'Password reset successfully. You can now log in.';
+            successBox.classList.add('show');
+        }
+    </script>
 </body>
 </html>

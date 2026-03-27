@@ -11,6 +11,8 @@ import pg from "pg";
 import bcrypt from "bcrypt";
 import fetch from "node-fetch";
 import { fileURLToPath } from "url";
+import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 // ----------------------------------------------------
 // Path Fix (ESM)
@@ -35,7 +37,6 @@ app.use(express.json());
 // ----------------------------------------------------
 app.use("/public", express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/views", express.static(path.join(__dirname, "views")));
 app.use("/TrueReview_logo", express.static(path.join(__dirname, "TrueReview_logo")));
 
 // ----------------------------------------------------
@@ -45,6 +46,30 @@ app.use("/TrueReview_logo", express.static(path.join(__dirname, "TrueReview_logo
 const db = new pg.Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
+});
+
+// Create password reset tokens table if it doesn't exist
+db.query(`
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+  )
+`).catch(err => console.error("[DB] Failed to create password_reset_tokens table:", err));
+
+// ----------------------------------------------------
+// Email (Nodemailer)
+// ----------------------------------------------------
+const emailTransporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: parseInt(process.env.EMAIL_PORT || "587"),
+  secure: process.env.EMAIL_PORT === "465",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
 // ----------------------------------------------------
@@ -60,7 +85,7 @@ app.use(
       pool: db,
       tableName: "session",
     }),
-    secret: process.env.SESSION_SECRET || "truereview_fallback_secret_123",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -440,6 +465,101 @@ app.post("/logout", (req, res) => {
   const user_id = req.session.user_id;
   console.log(`[LOGOUT] User logged out - ID: ${user_id}`);
   req.session.destroy(() => res.redirect("/"));
+});
+
+// FORGOT PASSWORD — Show form
+app.get("/forgot-password", (req, res) => {
+  res.sendFile(path.join(__dirname, "views/forgot_password.html"));
+});
+
+// FORGOT PASSWORD — Handle email submission
+app.post("/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  try {
+    const result = await db.query("SELECT user_id FROM users WHERE email = $1", [email]);
+    // Always redirect to the same page to avoid exposing whether an email exists
+    if (result.rows.length === 0) {
+      return res.redirect("/forgot-password?sent=1");
+    }
+    const user_id = result.rows[0].user_id;
+    const token = crypto.randomBytes(32).toString("hex");
+    const expires_at = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+
+    // Delete any existing tokens for this user
+    await db.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [user_id]);
+    // Store new token
+    await db.query(
+      "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)",
+      [user_id, token, expires_at]
+    );
+
+    const resetUrl = `${process.env.APP_URL || "http://localhost:3000"}/reset-password/${token}`;
+    await emailTransporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: email,
+      subject: "TrueReview — Reset Your Password",
+      html: `
+        <p>You requested a password reset for your TrueReview account.</p>
+        <p><a href="${resetUrl}">Click here to reset your password</a></p>
+        <p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p>
+      `,
+    });
+
+    res.redirect("/forgot-password?sent=1");
+  } catch (error) {
+    console.error("[FORGOT PASSWORD] Error:", error);
+    res.redirect("/forgot-password?error=1");
+  }
+});
+
+// RESET PASSWORD — Show new password form
+app.get("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  try {
+    const result = await db.query(
+      "SELECT * FROM password_reset_tokens WHERE token = $1 AND expires_at > NOW()",
+      [token]
+    );
+    if (result.rows.length === 0) {
+      return res.redirect("/forgot-password?error=expired");
+    }
+    res.sendFile(path.join(__dirname, "views/reset_password.html"));
+  } catch (error) {
+    console.error("[RESET PASSWORD] Error:", error);
+    res.redirect("/forgot-password?error=1");
+  }
+});
+
+// RESET PASSWORD — Handle new password submission
+app.post("/reset-password/:token", async (req, res) => {
+  const { token } = req.params;
+  const { password, confirmPassword } = req.body;
+
+  if (!password || password !== confirmPassword) {
+    return res.redirect(`/reset-password/${token}?error=mismatch`);
+  }
+  if (password.length < 6) {
+    return res.redirect(`/reset-password/${token}?error=tooshort`);
+  }
+
+  try {
+    const result = await db.query(
+      "SELECT * FROM password_reset_tokens WHERE token = $1 AND expires_at > NOW()",
+      [token]
+    );
+    if (result.rows.length === 0) {
+      return res.redirect("/forgot-password?error=expired");
+    }
+    const { user_id } = result.rows[0];
+    const hashed = await bcrypt.hash(password, 10);
+    await db.query("UPDATE users SET password = $1 WHERE user_id = $2", [hashed, user_id]);
+    await db.query("DELETE FROM password_reset_tokens WHERE token = $1", [token]);
+    console.log(`[RESET PASSWORD] Password reset for user_id: ${user_id}`);
+    res.redirect("/login?reset=1");
+  } catch (error) {
+    console.error("[RESET PASSWORD] Error:", error);
+    res.redirect(`/reset-password/${token}?error=1`);
+  }
 });
 
 app.get("/welcome", requireLogin, (req, res) => {
