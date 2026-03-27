@@ -252,9 +252,37 @@
             padding: 40px;
             margin-bottom: 40px;
             display: grid;
-            grid-template-columns: 200px 1fr;
+            grid-template-columns: 200px 1fr 1fr;
             gap: 40px;
             align-items: center;
+        }
+
+        .movie-extra-info {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            border-left: 2px solid rgba(255,255,255,0.15);
+            padding-left: 30px;
+        }
+
+        .extra-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .extra-label {
+            font-family: 'Oswald', sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--steel);
+        }
+
+        .extra-value {
+            font-size: 14px;
+            color: var(--off-white);
+            line-height: 1.4;
         }
 
         .poster {
@@ -537,6 +565,7 @@
             .update-container { padding: 0 30px; margin: 40px auto; }
             .update-title { font-size: 36px; }
             .movie-section { grid-template-columns: 150px 1fr; gap: 25px; padding: 30px; }
+            .movie-extra-info { border-left: none; padding-left: 0; border-top: 2px solid rgba(255,255,255,0.15); padding-top: 20px; grid-column: 1 / -1; }
         }
 
         /* iPhone */
@@ -557,6 +586,7 @@
             .update-container { padding: 0 16px; margin: 30px auto; }
             .update-title { font-size: 28px; margin-bottom: 25px; padding-bottom: 15px; }
             .movie-section { grid-template-columns: 1fr; text-align: center; padding: 20px; }
+            .movie-extra-info { border-left: none; padding-left: 0; border-top: 2px solid rgba(255,255,255,0.15); padding-top: 20px; text-align: left; }
             .poster { max-width: 200px; margin: 0 auto; }
             .rating-value { font-size: 36px; }
             #update-form, #delete-form { padding: 25px; }

@@ -779,6 +779,36 @@ app.get("/api/watched", requireLogin, async (req, res) => {
 });
 
 // Get single watched entry by ID
+// Get director, cast, genres, and MPA rating for a movie
+app.get("/api/movie-details/:movie_id", requireLogin, async (req, res) => {
+  const { movie_id } = req.params;
+  try {
+    // MPA rating from our DB
+    const dbResult = await db.query(
+      "SELECT mpaa_rating FROM all_movies WHERE movie_id = $1",
+      [movie_id]
+    );
+    const mpaa_rating = dbResult.rows[0]?.mpaa_rating || null;
+
+    // Credits + genres from TMDB in parallel
+    const [creditsRes, detailsRes] = await Promise.all([
+      fetch(`https://api.themoviedb.org/3/movie/${movie_id}/credits?api_key=${TMDB_API_KEY}`),
+      fetch(`https://api.themoviedb.org/3/movie/${movie_id}?api_key=${TMDB_API_KEY}`)
+    ]);
+
+    const [credits, details] = await Promise.all([creditsRes.json(), detailsRes.json()]);
+
+    const director = credits.crew?.find(p => p.job === "Director")?.name || null;
+    const cast = credits.cast?.slice(0, 5).map(a => a.name) || [];
+    const genres = details.genres?.map(g => g.name) || [];
+
+    res.json({ mpaa_rating, director, cast, genres });
+  } catch (error) {
+    console.error("[MOVIE DETAILS]", error);
+    res.status(500).json({ error: "Failed to fetch movie details" });
+  }
+});
+
 app.get("/api/watched/:watched_id", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
   const watched_id = req.params.watched_id;

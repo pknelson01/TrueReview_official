@@ -27,6 +27,36 @@ async function loadWatchedEntry() {
     // Set form actions
     document.getElementById("update-form").action = `/update-movie/${watchedId}`;
     document.getElementById("delete-form").action = `/delete-movie/${watchedId}`;
+
+    // Load extra movie details from TMDB
+    loadMovieDetails(data.movie_id);
+}
+
+async function loadMovieDetails(movie_id) {
+    try {
+        const res = await fetch(`/api/movie-details/${movie_id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data.mpaa_rating) {
+            document.getElementById("extra-mpa-value").textContent = data.mpaa_rating;
+            document.getElementById("extra-mpa").style.display = "flex";
+        }
+        if (data.director) {
+            document.getElementById("extra-director-value").textContent = data.director;
+            document.getElementById("extra-director").style.display = "flex";
+        }
+        if (data.genres?.length) {
+            document.getElementById("extra-genres-value").textContent = data.genres.join(", ");
+            document.getElementById("extra-genres").style.display = "flex";
+        }
+        if (data.cast?.length) {
+            document.getElementById("extra-cast-value").textContent = data.cast.join(", ");
+            document.getElementById("extra-cast").style.display = "flex";
+        }
+    } catch (err) {
+        console.error("Error loading movie details:", err);
+    }
 }
 
 // Update rating display as slider moves
