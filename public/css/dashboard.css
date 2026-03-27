@@ -587,7 +587,8 @@
         .movie-container {
             display: flex;
             flex-direction: column;
-            width: fit-content;
+            width: 100%;
+            max-width: 253px;
             margin: 0 auto;
         }
 
@@ -609,7 +610,6 @@
         .movie-display {
             position: relative;
             width: 100%;
-            max-width: 253px; /* 380px * (2/3) = 253px */
             background: var(--charcoal);
             border: 2px solid var(--white);
             cursor: pointer;
@@ -1063,8 +1063,11 @@
             .stat-number { font-size: 20px; }
             .stat-label { font-size: 8px; letter-spacing: 1px; }
             .movies-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .movie-container {
+                max-width: 83%;
             }
             .movie-badge { font-size: 9px; padding: 6px 10px; }
             .bio-section { padding: 12px; }
