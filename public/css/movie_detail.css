@@ -257,3 +257,73 @@ textarea {
     border-radius: 6px;
     cursor: pointer;
 }
+
+/* ============================================================
+   RESPONSIVE — iPad (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .detail-container {
+        padding: 0 20px;
+        margin: 30px auto;
+    }
+
+    .movie-title {
+        font-size: 30px;
+    }
+
+    .poster {
+        width: 150px;
+    }
+
+    .stars {
+        font-size: 34px;
+    }
+
+    textarea {
+        height: 120px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — iPhone (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .detail-container {
+        padding: 0 16px;
+        margin: 20px auto;
+    }
+
+    .movie-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .movie-section {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .poster {
+        width: 140px;
+    }
+
+    .stars {
+        font-size: 30px;
+    }
+
+    textarea {
+        font-size: 14px;
+        height: 100px;
+    }
+
+    .save-btn {
+        font-size: 16px;
+        padding: 10px 16px;
+    }
+
+    .modal {
+        width: 280px;
+        padding: 20px;
+    }
+}

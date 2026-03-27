@@ -60,6 +60,9 @@
             z-index: 0;
         }
 
+        .mobile-header { display: none; }
+        .mobile-menu { display: none; }
+
         .container {
             position: relative;
             z-index: 1;
@@ -387,10 +390,185 @@
             color: var(--charcoal);
             transform: translateY(-2px);
         }
+
+        /* iPad */
+        @media (max-width: 768px) {
+            .header-bar {
+                grid-template-columns: 80px 1fr 80px;
+                height: 48px;
+            }
+            .logo { font-size: 20px; }
+            .center-info { padding: 0 15px; gap: 10px; }
+            .site-title { font-size: 11px; letter-spacing: 2px; }
+            .tab { font-size: 9px; letter-spacing: 1px; }
+            .tab-bar { height: 32px; }
+            body { padding-top: 80px; }
+
+            .main-content { padding: 30px; }
+            .profile-body { padding: 25px; }
+            .profile-picture { width: 150px; height: 150px; font-size: 54px; }
+            .button-group { flex-direction: column; gap: 12px; }
+        }
+
+        /* iPhone */
+        @media (max-width: 480px) {
+            .header-bar {
+                grid-template-columns: 60px 1fr 60px;
+                height: 42px;
+            }
+            .logo { font-size: 16px; }
+            .center-info { padding: 0 8px; gap: 6px; }
+            .site-title { display: none; }
+            .search-btn { font-size: 9px; padding: 4px 8px; }
+            .logout-btn { font-size: 9px; padding: 4px 8px; }
+            .tab { font-size: 7px; letter-spacing: 0.5px; }
+            .tab-bar { height: 28px; }
+            body { padding-top: 48px; }
+
+            .main-content { padding: 16px; }
+            .profile-body { padding: 20px; }
+            .profile-picture { width: 120px; height: 120px; font-size: 42px; }
+            .form-input, .form-textarea, .form-select { padding: 12px; font-size: 14px; }
+
+            /* Hamburger menu */
+            .header-bar { display: none; }
+            .tab-bar { display: none; }
+
+            .mobile-header {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--white, #FFFFFF);
+                height: 48px;
+                border-bottom: 3px solid var(--charcoal, #2B2B2B);
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 1001;
+            }
+
+            .hamburger-btn {
+                position: absolute;
+                left: 16px;
+                background: none;
+                border: none;
+                cursor: pointer;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                padding: 4px;
+            }
+
+            .hamburger-btn span {
+                display: block;
+                width: 22px;
+                height: 2px;
+                background: var(--charcoal, #2B2B2B);
+                transition: all 0.3s ease;
+            }
+
+            .hamburger-btn.active span:nth-child(1) {
+                transform: rotate(45deg) translate(5px, 5px);
+            }
+            .hamburger-btn.active span:nth-child(2) {
+                opacity: 0;
+            }
+            .hamburger-btn.active span:nth-child(3) {
+                transform: rotate(-45deg) translate(5px, -5px);
+            }
+
+            .mobile-logo {
+                font-family: 'Oswald', sans-serif;
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--charcoal, #2B2B2B);
+                letter-spacing: -2px;
+                text-decoration: none;
+            }
+
+            .mobile-menu {
+                display: none;
+                position: fixed;
+                top: 48px;
+                left: 0;
+                right: 0;
+                background: var(--charcoal, #2B2B2B);
+                border-bottom: 2px solid var(--white, #FFFFFF);
+                z-index: 999;
+                flex-direction: column;
+            }
+
+            .mobile-menu.active {
+                display: flex;
+            }
+
+            .mobile-menu a,
+            .mobile-menu span {
+                padding: 14px 24px;
+                font-family: 'Oswald', sans-serif;
+                font-size: 14px;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: var(--off-white, #E8E8E8);
+                text-decoration: none;
+                border-bottom: 1px solid rgba(255,255,255,0.15);
+                transition: background 0.2s ease;
+            }
+
+            .mobile-menu a:hover {
+                background: rgba(255,255,255,0.1);
+            }
+
+            .mobile-menu span {
+                color: var(--steel, #A8A8A8);
+                font-size: 12px;
+            }
+
+            .mobile-menu .mobile-logout {
+                background: none;
+                border: none;
+                border-bottom: 1px solid rgba(255,255,255,0.15);
+                padding: 14px 24px;
+                font-family: 'Oswald', sans-serif;
+                font-size: 14px;
+                letter-spacing: 2px;
+                text-transform: uppercase;
+                color: #ff6666;
+                cursor: pointer;
+                text-align: left;
+                width: 100%;
+            }
+
+            .mobile-menu .mobile-logout:hover {
+                background: rgba(255,255,255,0.1);
+            }
+        }
     </style>
 </head>
 <body>
     <div class="grid-overlay"></div>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger-btn" id="hamburger-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <a href="/dashboard" class="mobile-logo">TrueReview</a>
+    </div>
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="/dashboard" id="mobile-dashboard-tab">Dashboard</a>
+        <a href="/watched">Watched</a>
+        <a href="/watchlist">Watchlist</a>
+        <a href="/add-movie">Search</a>
+        <span>Following (coming soon...)</span>
+        <span>Top-N (coming soon...)</span>
+        <form action="/logout" method="POST" style="margin:0;">
+            <button type="submit" class="mobile-logout">Logout</button>
+        </form>
+    </div>
 
     <div class="header-container">
         <div class="header-bar">
@@ -547,6 +725,34 @@
         }
 
         loadProfile();
+    </script>
+    <script>
+        // Hamburger menu toggle
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (hamburgerBtn && mobileMenu) {
+            hamburgerBtn.addEventListener('click', () => {
+                hamburgerBtn.classList.toggle('active');
+                mobileMenu.classList.toggle('active');
+            });
+            // Close menu when a link is clicked
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburgerBtn.classList.remove('active');
+                    mobileMenu.classList.remove('active');
+                });
+            });
+        }
+        // Update mobile dashboard tab with display name
+        async function updateMobileDashboardTab() {
+            try {
+                const res = await fetch("/api/user/username");
+                const data = await res.json();
+                const el = document.getElementById("mobile-dashboard-tab");
+                if (el) el.textContent = data.display_name.toUpperCase();
+            } catch (err) {}
+        }
+        updateMobileDashboardTab();
     </script>
 </body>
 </html>

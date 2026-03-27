@@ -67,3 +67,43 @@
 .extras a:hover {
     text-decoration: underline;
 }
+
+/* ============================================================
+   RESPONSIVE — iPad (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .login-wrapper {
+        max-width: 380px;
+        margin: 50px auto;
+        padding: 28px;
+    }
+
+    .login-title {
+        font-size: 24px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — iPhone (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .login-wrapper {
+        max-width: none;
+        margin: 30px 16px;
+        padding: 24px 20px;
+    }
+
+    .login-title {
+        font-size: 22px;
+        margin-bottom: 18px;
+    }
+
+    .login-form input {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .login-btn {
+        font-size: 15px;
+    }
+}

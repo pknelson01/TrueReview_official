@@ -86,3 +86,65 @@ body {
     text-align: center;
     margin-top: 40px;
 }
+
+/* ============================================================
+   RESPONSIVE — iPad (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .add-movie-container {
+        padding: 0 20px;
+    }
+
+    .page-title {
+        font-size: 28px;
+    }
+
+    .search-form input {
+        width: 280px;
+        font-size: 16px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — iPhone (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .add-movie-container {
+        padding: 0 16px;
+        margin: 20px auto;
+    }
+
+    .page-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .search-form {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .search-form input {
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 16px;
+    }
+
+    .movie-card {
+        padding: 10px;
+    }
+
+    .poster {
+        width: 70px;
+        margin-right: 12px;
+    }
+
+    .movie-info .title {
+        font-size: 17px;
+    }
+
+    .select-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+}

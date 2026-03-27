@@ -93,3 +93,60 @@ textarea {
 .delete-btn:hover {
     background: #b52b27;
 }
+
+/* ============================================================
+   RESPONSIVE — iPad (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .update-container {
+        padding: 0 20px;
+        margin: 35px auto;
+    }
+
+    .update-title {
+        font-size: 28px;
+    }
+
+    .poster {
+        width: 120px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — iPhone (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .update-container {
+        padding: 0 16px;
+        margin: 25px auto;
+    }
+
+    .update-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .movie-section {
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .poster {
+        width: 110px;
+    }
+
+    .movie-info h2 {
+        font-size: 20px;
+    }
+
+    select,
+    textarea {
+        font-size: 14px;
+    }
+
+    .submit-btn,
+    .delete-btn {
+        font-size: 16px;
+        padding: 10px;
+    }
+}

@@ -135,6 +135,34 @@
             color: var(--steel);
             letter-spacing: 2px;
         }
+        /* RESPONSIVE — iPad */
+        @media (max-width: 768px) {
+            .welcome-wrapper {
+                padding: 60px 50px;
+                margin: 0 20px;
+            }
+            .welcome-text {
+                font-size: 38px;
+            }
+        }
+
+        /* RESPONSIVE — iPhone */
+        @media (max-width: 480px) {
+            .welcome-wrapper {
+                padding: 40px 24px;
+                margin: 0 12px;
+                border-width: 3px;
+            }
+            .welcome-text {
+                font-size: 28px;
+                margin-bottom: 35px;
+                padding-bottom: 20px;
+            }
+            .loading-text {
+                font-size: 13px;
+                letter-spacing: 2px;
+            }
+        }
     </style>
 </head>
 <body>

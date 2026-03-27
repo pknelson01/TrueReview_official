@@ -102,3 +102,53 @@ body {
     color: #0a66c2;
     font-weight: bold;
 }
+
+/* ============================================================
+   RESPONSIVE — iPad (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .watched-container {
+        padding: 0 16px;
+    }
+
+    .watched-title {
+        font-size: 30px;
+        margin-bottom: 24px;
+    }
+
+    .movies-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 20px;
+    }
+
+    .poster-wrapper {
+        height: 230px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — iPhone (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .watched-title {
+        font-size: 26px;
+        margin-bottom: 20px;
+    }
+
+    .movies-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 14px;
+    }
+
+    .poster-wrapper {
+        height: 200px;
+    }
+
+    .movie-title {
+        font-size: 14px;
+    }
+
+    .user-rating {
+        font-size: 13px;
+    }
+}

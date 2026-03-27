@@ -269,3 +269,109 @@ body {
 .content-card .profile-info {
     margin-top: 60px;
 }
+
+/* ============================================================
+   RESPONSIVE — iPad (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .dashboard-container {
+        max-width: 100%;
+        padding: 0 16px;
+    }
+
+    .profile-header {
+        height: 200px;
+    }
+
+    .profile-pic-wrapper {
+        width: 110px;
+        height: 110px;
+        bottom: -55px !important;
+        left: 20px !important;
+    }
+
+    .content-card {
+        padding: 28px 20px;
+    }
+
+    .content-card .profile-info {
+        margin-top: 50px;
+    }
+
+    .profile-flex-row {
+        gap: 30px;
+    }
+
+    .profile-info {
+        padding-left: 20px;
+    }
+
+    .username {
+        font-size: 32px;
+    }
+
+    .last-watched {
+        width: 200px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — iPhone (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .profile-header {
+        height: 160px;
+    }
+
+    .profile-pic-wrapper {
+        width: 90px;
+        height: 90px;
+        bottom: -45px !important;
+        left: 16px !important;
+    }
+
+    .content-card {
+        padding: 20px 16px;
+    }
+
+    .content-card .profile-info {
+        margin-top: 40px;
+    }
+
+    .profile-flex-row {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .profile-info {
+        padding-left: 16px;
+    }
+
+    .username {
+        font-size: 26px;
+    }
+
+    .user-title {
+        font-size: 15px;
+    }
+
+    .user-bio {
+        font-size: 15px;
+    }
+
+    .last-watched {
+        width: 100%;
+    }
+
+    .last-poster {
+        width: 80px;
+    }
+
+    .bg-edit-overlay i {
+        font-size: 30px;
+    }
+
+    .edit-overlay i {
+        font-size: 24px;
+    }
+}

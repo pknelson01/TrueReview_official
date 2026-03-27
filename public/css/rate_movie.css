@@ -122,3 +122,63 @@ textarea {
 .submit-btn.enabled:hover {
     background: #004182; /* darker blue hover */
 }
+
+/* ============================================================
+   RESPONSIVE — iPad (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .rate-container {
+        padding: 0 20px;
+        margin: 35px auto;
+    }
+
+    .rate-title {
+        font-size: 28px;
+    }
+
+    .poster {
+        width: 120px;
+    }
+
+    .stars {
+        font-size: 34px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — iPhone (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .rate-container {
+        padding: 0 16px;
+        margin: 25px auto;
+    }
+
+    .rate-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .movie-section {
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .poster {
+        width: 110px;
+    }
+
+    .stars {
+        font-size: 30px;
+    }
+
+    textarea {
+        font-size: 14px;
+        height: 100px;
+    }
+
+    .submit-btn {
+        font-size: 16px;
+        padding: 10px 16px;
+    }
+}

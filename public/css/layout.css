@@ -104,3 +104,67 @@ body {
     color: #0a66c2;
     text-decoration: underline;
 }
+
+/* ============================================================
+   RESPONSIVE — iPad (max-width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+    .navbar {
+        flex-wrap: wrap;
+        padding: 10px 16px;
+        gap: 8px;
+    }
+
+    .nav-center {
+        order: 3;
+        flex: 0 0 100%;
+        justify-content: center;
+        margin-top: 4px;
+    }
+
+    .nav-right {
+        gap: 16px;
+    }
+
+    .brand {
+        font-size: 20px;
+    }
+
+    .nav-right a,
+    .logout-btn {
+        font-size: 14px;
+    }
+
+    .add-movie-btn-nav {
+        font-size: 13px;
+        padding: 8px 14px;
+    }
+}
+
+/* ============================================================
+   RESPONSIVE — iPhone (max-width: 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+    .navbar {
+        padding: 8px 12px;
+        gap: 6px;
+    }
+
+    .brand {
+        font-size: 18px;
+    }
+
+    .nav-right {
+        gap: 10px;
+    }
+
+    .nav-right a,
+    .logout-btn {
+        font-size: 13px;
+    }
+
+    .add-movie-btn-nav {
+        font-size: 12px;
+        padding: 7px 12px;
+    }
+}
