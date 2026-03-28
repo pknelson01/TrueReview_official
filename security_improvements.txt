@@ -1,0 +1,155 @@
+============================================================================
+ TRUEREVIEW — SECURITY IMPROVEMENTS
+ Reviewed: 2026-03-27
+============================================================================
+
+STATUS KEY:
+  [DONE]    = Implemented
+  [TODO]    = Not yet implemented
+
+
+============================================================================
+ CRITICAL SEVERITY
+============================================================================
+
+1. [TODO] Stored XSS via innerHTML — All Client-Side Rendering
+   Files: public/js/add_movies.js, watched.js, watchlist.js
+   Issue: Every client-side JS file builds DOM with unsanitized data using
+          innerHTML + template literals. Movie titles (from TMDb) and user
+          fields (display_name, title, bio) are rendered without escaping.
+   Attack: User sets bio to <img src=x onerror="steal(document.cookie)"> —
+           any user viewing their profile executes the payload.
+   Fix: Replace innerHTML with textContent/createElement for user data,
+        or sanitize with DOMPurify. Use addEventListener() instead of
+        inline onclick attributes.
+
+2. [TODO] Unrestricted File Upload — Remote Code Execution Risk
+   File: server.js (Multer config, lines ~102-127)
+   Issue: Multer has no file type filter, no file size limit, no MIME
+          validation. /uploads is served as a static directory.
+   Attack: Upload a .html file as "profile picture" — browsing to
+           /uploads/profile_pictures/pfp_1_123.html executes JS in the
+           app's origin, enabling full session hijack.
+   Fix: Add fileFilter to whitelist MIME types (image/jpeg, image/png,
+        image/webp), validate extensions, set limits: { fileSize: 5MB },
+        re-validate magic bytes server-side.
+
+3. [TODO] No CSRF Protection
+   Issue: No CSRF tokens anywhere. All state-changing POST operations rely
+          solely on session cookies. sameSite: "lax" does not fully protect.
+   Attack: GET /guest-login is exploitable via <img src="...guest-login">
+           forcing victims into the guest session.
+   Fix: Implement csurf or double-submit cookie pattern. Change
+        /guest-login to require POST.
+
+4. [TODO] No Server-Side Validation on Ratings
+   File: server.js (POST /add-movie/:movie_id, POST /update-movie/:watched_id)
+   Issue: rating from req.body is passed directly to the database with no
+          type check or range validation.
+   Attack: Submit rating=-999 or rating=NaN — corrupts data.
+   Fix: Validate rating is a number between 0.0 and 10.0 server-side.
+
+
+============================================================================
+ HIGH SEVERITY
+============================================================================
+
+5. [TODO] Broken Access Control — Profile Update Lacks Validation
+   File: server.js (POST /update-profile)
+   Issue: username uniqueness not checked gracefully (will 500 on conflict).
+          title and bio have no length limits — users can store megabytes.
+   Fix: Check username uniqueness before update. Add length limits for
+        title (e.g. 50 chars) and bio (e.g. 500 chars).
+
+6. [TODO] Broken Access Control — Social Graph Enumeration
+   File: server.js (/api/user/:user_id/followers, /api/user/:user_id/following)
+   Issue: Any authenticated user can enumerate the full social graph of
+          every user by iterating user IDs.
+   Fix: Consider scoping to profiles the user can view, or accept this
+        as intended behavior for a social app.
+
+7. [TODO] Information Disclosure in Error Responses
+   File: server.js (multiple endpoints)
+   Issue: Raw err.message sent to client in JSON responses, leaking
+          database schema, table names, and internal logic.
+   Fix: Log errors server-side only, return generic messages to clients.
+
+8. [TODO] Weak Email Validation
+   File: server.js (isValidEmail function)
+   Issue: Only checks for "@" and ".com" substring. Accepts invalid emails,
+          rejects all non-.com domains (.org, .edu, .io, .net).
+   Fix: Use a proper regex or validator.js library.
+
+9. [TODO] No Password Strength Requirements at Signup
+   File: server.js (POST /signup)
+   Issue: Signup accepts any password including empty strings. Reset
+          requires 6+ chars, admin reset requires 8+ chars — inconsistent.
+   Fix: Enforce minimum 8 characters at signup to match other flows.
+
+
+============================================================================
+ MEDIUM SEVERITY
+============================================================================
+
+10. [TODO] SSL Certificate Validation Disabled
+    File: server.js (pg.Pool config)
+    Issue: ssl: { rejectUnauthorized: false } disables TLS cert verification
+           for the PostgreSQL connection — vulnerable to MITM attacks.
+    Fix: Use ssl: { rejectUnauthorized: true } with the Render CA cert,
+         or use ssl: true.
+
+11. [TODO] Session Not Invalidated on Password Change
+    File: server.js (POST /change-password)
+    Issue: After password change, all other active sessions remain valid.
+           Compromised sessions survive a password change.
+    Fix: Destroy all sessions for the user from the session table after
+         password change.
+
+12. [DONE] Hardcoded Admin Authorization
+    File: server.js
+    Issue: Admin access was determined by a single hardcoded email address.
+    Fix: Replaced with admin_yn column check in the database. Role toggle
+         added to admin panel.
+
+13. [TODO] Missing Security Headers
+    Issue: No Content-Security-Policy, X-Content-Type-Options, X-Frame-Options,
+           Strict-Transport-Security, or Referrer-Policy headers.
+    Fix: Install and use helmet middleware:
+         npm install helmet
+         app.use(helmet())
+
+14. [TODO] Excessive Logging of Sensitive Data
+    File: server.js (throughout)
+    Issue: User IDs, emails, and actions logged to stdout. On Render.com
+           these are visible in the dashboard.
+    Fix: Remove email addresses and behavioral patterns from production logs.
+
+15. [TODO] trust proxy Set Without Specificity
+    File: server.js
+    Issue: app.set("trust proxy", 1) trusts the first proxy hop. If app is
+           accessed directly, attackers can spoof X-Forwarded-* headers.
+    Fix: Acceptable for Render deployment, but document the assumption.
+
+
+============================================================================
+ LOW SEVERITY
+============================================================================
+
+16. [TODO] Guest Account Credentials Hardcoded
+    File: server.js (GET /guest-login)
+    Issue: Guest password "guest" is hardcoded. Known credential accessible
+           to anyone reading the source.
+    Fix: Acceptable if guest account has no elevated privileges. Consider
+         moving to env var.
+
+17. [TODO] No Rate Limiting
+    Issue: No rate limiting on login, signup, password reset, or search.
+    Attack: Brute-force passwords, flood reset emails, abuse TMDb API quota.
+    Fix: Install express-rate-limit:
+         npm install express-rate-limit
+         Apply to auth and search endpoints.
+
+18. [TODO] Old Upload Files Never Cleaned Up
+    Issue: When a user uploads a new profile picture, the old file stays
+           on disk. Causes unbounded disk growth.
+    Fix: Delete the previous file (using fs.unlink) before saving the new one.

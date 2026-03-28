@@ -891,6 +891,158 @@
             margin-top: 2px;
         }
 
+        /* Viewer-watched dimmed cards (matches search page .movie-card.watched) */
+        .watched-card.viewer-watched .watched-poster-wrapper img {
+            opacity: 0.4;
+        }
+
+        /* Persistent dark background that never changes on hover */
+        .viewer-watched-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(43, 43, 43, 0.85);
+            pointer-events: none;
+        }
+
+        .viewer-watched-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        .viewer-watched-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--off-white);
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .viewer-watched-year {
+            font-size: 12px;
+            color: var(--steel);
+        }
+
+        .viewer-watched-label {
+            position: absolute;
+            bottom: 15px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--steel);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        /* Dual rating overlay on hover — no background, sits on top of watched overlay */
+        .dual-rating-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .viewer-watched-overlay {
+            z-index: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .watched-card.viewer-watched:hover .dual-rating-overlay {
+            opacity: 1;
+        }
+
+        .watched-card.viewer-watched:hover .viewer-watched-overlay {
+            opacity: 0;
+        }
+
+        .dual-rating-row {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .dual-rating-label {
+            font-family: 'Oswald', sans-serif;
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--steel);
+            width: 40px;
+            text-align: right;
+        }
+
+        .dual-rating-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--white);
+            line-height: 1;
+        }
+
+        /* Watchlist button on profile cards */
+        .profile-watchlist-btn {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: var(--white);
+            border: 2px solid var(--charcoal);
+            color: var(--charcoal);
+            padding: 4px 8px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 9px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 20;
+            opacity: 0;
+        }
+
+        .profile-watchlist-btn:hover {
+            background: var(--charcoal);
+            color: var(--white);
+        }
+
+        .profile-watchlist-btn.in-watchlist {
+            background: #2ecc71;
+            border-color: #27ae60;
+            color: var(--white);
+        }
+
+        .profile-watchlist-btn.in-watchlist:hover {
+            background: #27ae60;
+            border-color: #229954;
+        }
+
+        .watched-card:hover .profile-watchlist-btn {
+            opacity: 1;
+        }
+
         .empty-msg {
             text-align: center;
             color: var(--steel);

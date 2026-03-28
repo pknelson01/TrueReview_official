@@ -331,7 +331,7 @@ body::before {
 
 .table-header-row {
     display: grid;
-    grid-template-columns: 1fr 3fr 290px;
+    grid-template-columns: 1fr 3fr 420px;
     padding: 14px 24px;
     background: var(--white);
     color: var(--charcoal);
@@ -350,7 +350,7 @@ body::before {
 
 .user-row {
     display: grid;
-    grid-template-columns: 1fr 3fr 290px;
+    grid-template-columns: 1fr 3fr 420px;
     align-items: center;
     padding: 18px 24px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -431,6 +431,39 @@ body::before {
 
 .status-btn.deactivated:hover {
     background: rgba(255, 80, 80, 0.3);
+}
+
+.role-btn {
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px 0;
+    width: 130px;
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.role-btn.admin {
+    background: rgba(245, 197, 24, 0.15);
+    border-color: var(--admin-gold);
+    color: var(--admin-gold);
+}
+
+.role-btn.admin:hover {
+    background: rgba(245, 197, 24, 0.3);
+}
+
+.role-btn.basic {
+    background: rgba(168, 168, 168, 0.15);
+    border-color: var(--steel);
+    color: var(--steel);
+}
+
+.role-btn.basic:hover {
+    background: rgba(168, 168, 168, 0.3);
 }
 
 .change-pw-btn {
@@ -535,6 +568,7 @@ body::before {
     }
 
     .status-btn,
+    .role-btn,
     .change-pw-btn {
         width: 100%;
     }

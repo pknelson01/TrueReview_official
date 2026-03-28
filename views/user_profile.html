@@ -23,8 +23,8 @@
         <a href="/watched">Watched</a>
         <a href="/watchlist">Watchlist</a>
         <a href="/add-movie">Search</a>
-        <span>Following (coming soon...)</span>
-        <span>Top-N (coming soon...)</span>
+        <span>Stats (coming soon...)</span>
+        <span>Goals (coming soon...)</span>
         <form action="/logout" method="POST" style="margin:0;">
             <button type="submit" class="mobile-logout">Logout</button>
         </form>
@@ -48,10 +48,10 @@
             </div>
         </div>
         <div class="tab-bar">
-            <span class="tab">Following (coming soon...)</span>
+            <span class="tab">Stats (coming soon...)</span>
             <a href="/watched" class="tab">Watched</a>
             <a href="/watchlist" class="tab">Watchlist</a>
-            <span class="tab">Top-N (coming soon...)</span>
+            <span class="tab">Goals (coming soon...)</span>
             <a href="/dashboard" class="tab" id="dashboard-tab"></a>
         </div>
     </div>
@@ -169,6 +169,7 @@
         const username = window.location.pathname.split('/user/')[1];
         let targetUserId = null;
         let isFollowing = false;
+        let isOwnProfile = false;
 
         async function loadProfile() {
             const res = await fetch(`/api/profile/${username}`);
@@ -222,6 +223,14 @@
                     </div>`;
             }
 
+            isOwnProfile = data.is_own_profile;
+
+            // Redirect to dashboard if viewing own profile
+            if (data.is_own_profile) {
+                window.location.href = '/dashboard';
+                return;
+            }
+
             // Follow button (hide on own profile)
             if (!data.is_own_profile) {
                 const btn = document.getElementById('follow-btn');
@@ -254,8 +263,23 @@
         async function loadWatchedList() {
             const grid = document.getElementById('watched-grid');
             try {
-                const res = await fetch(`/api/profile/${username}/watched`);
-                const movies = await res.json();
+                // Fetch target user's watched list (+ viewer's data if not own profile)
+                const fetches = [fetch(`/api/profile/${username}/watched`)];
+                if (!isOwnProfile) {
+                    fetches.push(fetch('/api/watched'));
+                    fetches.push(fetch('/api/watchlist'));
+                }
+                const results = await Promise.all(fetches);
+                const movies = await results[0].json();
+                const myWatched = !isOwnProfile ? await results[1].json() : [];
+                const myWatchlist = !isOwnProfile ? await results[2].json() : [];
+
+                // Build lookup maps for viewer's data
+                const myWatchedMap = new Map();
+                myWatched.forEach(m => myWatchedMap.set(m.movie_id, m));
+                const myWatchlistSet = new Set();
+                myWatchlist.forEach(m => myWatchlistSet.add(m.movie_id));
+
                 document.getElementById('total-entries').textContent = `TOTAL: ${movies.length}`;
                 if (movies.length === 0) {
                     grid.innerHTML = '<div class="empty-msg">No movies watched yet.</div>';
@@ -263,22 +287,111 @@
                 }
                 grid.innerHTML = '';
                 movies.forEach(m => {
-                    const card = document.createElement('a');
-                    card.className = 'watched-card';
-                    card.href = `/rate-movie/${m.movie_id}`;
-                    card.innerHTML = `
-                        <div class="watched-poster-wrapper">
-                            <img src="${m.poster_full_url || '/TrueReview_logo/Poster_BW.png'}" alt="${m.movie_title}" onerror="this.src='/TrueReview_logo/Poster_BW.png'" />
-                            <div class="watched-rating">${parseFloat(m.user_rating).toFixed(1)}</div>
-                        </div>
-                        <div class="watched-info">
-                            <div class="watched-movie-title">${m.movie_title}</div>
-                            <div class="watched-year">${m.releaseYear || ''}</div>
-                        </div>`;
+                    const card = document.createElement('div');
+                    const myEntry = !isOwnProfile ? myWatchedMap.get(m.movie_id) : null;
+                    const iWatched = !!myEntry;
+                    const inMyWatchlist = !isOwnProfile ? myWatchlistSet.has(m.movie_id) : false;
+
+                    card.className = iWatched ? 'watched-card viewer-watched' : 'watched-card';
+
+                    if (isOwnProfile) {
+                        // Own profile: simple card linking to update page
+                        card.innerHTML = `
+                            <div class="watched-poster-wrapper">
+                                <img src="${m.poster_full_url || '/TrueReview_logo/Poster_BW.png'}" alt="${m.movie_title}" onerror="this.src='/TrueReview_logo/Poster_BW.png'" />
+                                <div class="watched-rating">${parseFloat(m.user_rating).toFixed(1)}</div>
+                            </div>
+                            <div class="watched-info">
+                                <div class="watched-movie-title">${m.movie_title}</div>
+                                <div class="watched-year">${m.releaseYear || ''}</div>
+                            </div>`;
+                        card.style.cursor = 'pointer';
+                        card.addEventListener('click', () => { window.location.href = `/update-movie/${m.watched_id}`; });
+                    } else if (iWatched) {
+                        // Dimmed card matching search page "watched" style
+                        const myRating = parseFloat(myEntry.user_rating).toFixed(1);
+                        const theirRating = parseFloat(m.user_rating).toFixed(1);
+                        card.innerHTML = `
+                            <div class="watched-poster-wrapper">
+                                <img src="${m.poster_full_url || '/TrueReview_logo/Poster_BW.png'}" alt="${m.movie_title}" onerror="this.src='/TrueReview_logo/Poster_BW.png'" />
+                                <div class="viewer-watched-bg"></div>
+                                <div class="viewer-watched-overlay">
+                                    <div class="viewer-watched-title">${m.movie_title}</div>
+                                    <div class="viewer-watched-year">${m.releaseYear || ''}</div>
+                                    <div class="viewer-watched-label">Watched</div>
+                                </div>
+                                <div class="dual-rating-overlay">
+                                    <div class="dual-rating-row">
+                                        <span class="dual-rating-label">You</span>
+                                        <span class="dual-rating-value">${myRating}</span>
+                                    </div>
+                                    <div class="dual-rating-row">
+                                        <span class="dual-rating-label">Them</span>
+                                        <span class="dual-rating-value">${theirRating}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="watched-info">
+                                <div class="watched-movie-title">${m.movie_title}</div>
+                                <div class="watched-year">${m.releaseYear || ''}</div>
+                            </div>`;
+                    } else {
+                        // Normal card with watchlist button
+                        const wlBtnClass = inMyWatchlist ? 'profile-watchlist-btn in-watchlist' : 'profile-watchlist-btn';
+                        const wlBtnText = inMyWatchlist ? '✓ Watchlist' : '+ Watchlist';
+                        card.innerHTML = `
+                            <div class="watched-poster-wrapper">
+                                <img src="${m.poster_full_url || '/TrueReview_logo/Poster_BW.png'}" alt="${m.movie_title}" onerror="this.src='/TrueReview_logo/Poster_BW.png'" />
+                                <div class="watched-rating">${parseFloat(m.user_rating).toFixed(1)}</div>
+                                <button class="${wlBtnClass}" data-movie-id="${m.movie_id}" data-in-watchlist="${inMyWatchlist}">${wlBtnText}</button>
+                            </div>
+                            <div class="watched-info">
+                                <div class="watched-movie-title">${m.movie_title}</div>
+                                <div class="watched-year">${m.releaseYear || ''}</div>
+                            </div>`;
+                        const wlBtn = card.querySelector('.profile-watchlist-btn');
+                        wlBtn.addEventListener('click', (e) => handleProfileWatchlist(e, wlBtn));
+                        // Click card to rate this movie
+                        card.style.cursor = 'pointer';
+                        card.addEventListener('click', (e) => {
+                            if (e.target.closest('.profile-watchlist-btn')) return;
+                            window.location.href = `/rate-movie/${m.movie_id}`;
+                        });
+                    }
+
                     grid.appendChild(card);
                 });
             } catch (err) {
                 grid.innerHTML = '<div class="empty-msg">Failed to load watched list.</div>';
+            }
+        }
+
+        async function handleProfileWatchlist(e, btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const movieId = btn.dataset.movieId;
+            const inWatchlist = btn.dataset.inWatchlist === 'true';
+
+            try {
+                if (inWatchlist) {
+                    const res = await fetch(`/api/watchlist/${movieId}`, { method: 'DELETE' });
+                    if (!res.ok) return;
+                    btn.classList.remove('in-watchlist');
+                    btn.textContent = '+ Watchlist';
+                    btn.dataset.inWatchlist = 'false';
+                } else {
+                    const res = await fetch('/api/watchlist/add', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ movie_id: movieId, priority_01: 0 })
+                    });
+                    if (!res.ok) return;
+                    btn.classList.add('in-watchlist');
+                    btn.textContent = '✓ Watchlist';
+                    btn.dataset.inWatchlist = 'true';
+                }
+            } catch (err) {
+                console.error('Watchlist error:', err);
             }
         }
 
@@ -359,8 +472,7 @@
             if (e.target === followListModal) followListModal.classList.remove('active');
         });
 
-        loadProfile();
-        loadWatchedList();
+        loadProfile().then(() => loadWatchedList());
         updateDashboardTab();
     </script>
     <script src="/public/js/admin-button.js"></script>

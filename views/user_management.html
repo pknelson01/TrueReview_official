@@ -26,8 +26,8 @@
         <a href="/watchlist">Watchlist</a>
         <a href="/add-movie">Search</a>
         <a href="/admin/user-management" style="color:#f5c518;">Admin Panel</a>
-        <span>Following (coming soon...)</span>
-        <span>Top-N (coming soon...)</span>
+        <span>Stats (coming soon...)</span>
+        <span>Goals (coming soon...)</span>
         <form action="/logout" method="POST" style="margin:0;">
             <button type="submit" class="mobile-logout">Logout</button>
         </form>
@@ -53,10 +53,10 @@
         </div>
 
         <div class="tab-bar">
-            <span class="tab">Following (coming soon...)</span>
+            <span class="tab">Stats (coming soon...)</span>
             <a href="/watched" class="tab">Watched</a>
             <a href="/watchlist" class="tab">Watchlist</a>
-            <span class="tab">Top-N (coming soon...)</span>
+            <span class="tab">Goals (coming soon...)</span>
             <a href="/dashboard" class="tab" id="dashboard-tab"></a>
         </div>
     </div>
@@ -75,6 +75,18 @@
                 <div class="modal-buttons">
                     <button class="modal-btn modal-btn-yes" id="modal-yes">Yes, I'm Sure</button>
                     <button class="modal-btn modal-btn-no" id="modal-no">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Role Confirmation Modal -->
+        <div class="modal-overlay" id="role-modal">
+            <div class="modal-box">
+                <div class="modal-title" id="role-modal-title">Confirm Role Change</div>
+                <div class="modal-message" id="role-modal-message"></div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-yes" id="role-modal-yes">Yes, I'm Sure</button>
+                    <button class="modal-btn modal-btn-no" id="role-modal-no">Cancel</button>
                 </div>
             </div>
         </div>
@@ -137,6 +149,7 @@
             row.dataset.userId = u.user_id;
 
             const isActive = u.active_yn !== 0;
+            const isAdmin = u.admin_yn === 1;
 
             row.innerHTML = `
                 <div class="col-user">
@@ -165,6 +178,9 @@
                     <button class="status-btn ${isActive ? 'active' : 'deactivated'}" data-user-id="${u.user_id}" data-active="${isActive ? 1 : 0}">
                         ${isActive ? 'Active' : 'Deactivated'}
                     </button>
+                    <button class="role-btn ${isAdmin ? 'admin' : 'basic'}" data-user-id="${u.user_id}" data-admin="${isAdmin ? 1 : 0}">
+                        ${isAdmin ? 'Admin' : 'Basic'}
+                    </button>
                     <button class="change-pw-btn" data-user-id="${u.user_id}" data-username="${u.username}">
                         Change Password
                     </button>
@@ -172,6 +188,7 @@
             `;
 
             row.querySelector('.status-btn').addEventListener('click', handleStatusClick);
+            row.querySelector('.role-btn').addEventListener('click', handleRoleClick);
             row.querySelector('.change-pw-btn').addEventListener('click', handleChangePwClick);
             return row;
         }
@@ -212,6 +229,52 @@
                     }
                 } catch (err) {
                     console.error('Failed to toggle status:', err);
+                }
+            };
+
+            const onNo = () => cleanup();
+
+            yes.addEventListener('click', onYes);
+            no.addEventListener('click', onNo);
+            modal.addEventListener('click', e => { if (e.target === modal) cleanup(); }, { once: true });
+        }
+
+        function handleRoleClick(e) {
+            const btn = e.currentTarget;
+            const userId = btn.dataset.userId;
+            const isAdmin = btn.dataset.admin === '1';
+            const username = btn.closest('.user-row').querySelector('.user-username').textContent;
+
+            const modal = document.getElementById('role-modal');
+            document.getElementById('role-modal-title').textContent = isAdmin ? 'Remove Admin' : 'Grant Admin';
+            document.getElementById('role-modal-message').textContent = isAdmin
+                ? `Are you sure you want to remove admin privileges from ${username}?`
+                : `Are you sure you want to grant admin privileges to ${username}?`;
+
+            modal.classList.add('active');
+
+            const yes = document.getElementById('role-modal-yes');
+            const no = document.getElementById('role-modal-no');
+
+            const cleanup = () => {
+                modal.classList.remove('active');
+                yes.removeEventListener('click', onYes);
+                no.removeEventListener('click', onNo);
+            };
+
+            const onYes = async () => {
+                cleanup();
+                try {
+                    const res = await fetch(`/api/admin/users/${userId}/role`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        const nowAdmin = data.admin_yn === 1;
+                        btn.textContent = nowAdmin ? 'Admin' : 'Basic';
+                        btn.className = `role-btn ${nowAdmin ? 'admin' : 'basic'}`;
+                        btn.dataset.admin = nowAdmin ? '1' : '0';
+                    }
+                } catch (err) {
+                    console.error('Failed to toggle role:', err);
                 }
             };
 

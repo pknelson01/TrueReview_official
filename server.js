@@ -134,12 +134,10 @@ function requireLogin(req, res, next) {
   next();
 }
 
-const ADMIN_EMAIL = "pk.elliott11@gmail.com";
-
 async function requireAdmin(req, res, next) {
   if (!req.session.user_id) return res.redirect("/login");
-  const result = await db.query("SELECT email FROM users WHERE user_id = $1", [req.session.user_id]);
-  if (result.rows[0]?.email !== ADMIN_EMAIL) return res.status(403).sendFile(path.join(__dirname, "views/index.html"));
+  const result = await db.query("SELECT admin_yn FROM users WHERE user_id = $1", [req.session.user_id]);
+  if (result.rows[0]?.admin_yn !== 1) return res.status(403).sendFile(path.join(__dirname, "views/index.html"));
   next();
 }
 
@@ -709,6 +707,7 @@ app.get("/api/admin/users", requireAdmin, async (req, res) => {
         u.display_name,
         u.popcorn_kernels,
         u.active_yn,
+        u.admin_yn,
         (SELECT COUNT(*) FROM user_follows WHERE following_id = u.user_id) AS follower_count,
         (SELECT COUNT(*) FROM user_follows WHERE follower_id = u.user_id) AS following_count,
         (SELECT ROUND(AVG(user_rating)::numeric, 2) FROM watched_list WHERE user_id = u.user_id) AS avg_rating
@@ -738,6 +737,22 @@ app.post("/api/admin/users/:user_id/status", requireAdmin, async (req, res) => {
   }
 });
 
+// Toggle user role (admin only)
+app.post("/api/admin/users/:user_id/role", requireAdmin, async (req, res) => {
+  const { user_id } = req.params;
+  try {
+    const current = await db.query("SELECT admin_yn FROM users WHERE user_id = $1", [user_id]);
+    if (current.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    const newRole = current.rows[0].admin_yn === 1 ? 0 : 1;
+    await db.query("UPDATE users SET admin_yn = $1 WHERE user_id = $2", [newRole, user_id]);
+    console.log(`[ADMIN] User ${user_id} role set to ${newRole === 1 ? 'ADMIN' : 'BASIC'}`);
+    res.json({ success: true, admin_yn: newRole });
+  } catch (err) {
+    console.error("[ADMIN] Error toggling role:", err);
+    res.status(500).json({ error: "Failed to update role" });
+  }
+});
+
 // Admin change password for any user
 app.post("/api/admin/users/:user_id/password", requireAdmin, async (req, res) => {
   const { user_id } = req.params;
@@ -758,8 +773,8 @@ app.post("/api/admin/users/:user_id/password", requireAdmin, async (req, res) =>
 });
 
 app.get("/api/user/is-admin", requireLogin, async (req, res) => {
-  const result = await db.query("SELECT email FROM users WHERE user_id = $1", [req.session.user_id]);
-  res.json({ is_admin: result.rows[0]?.email === ADMIN_EMAIL });
+  const result = await db.query("SELECT admin_yn FROM users WHERE user_id = $1", [req.session.user_id]);
+  res.json({ is_admin: result.rows[0]?.admin_yn === 1 });
 });
 
 // ============================================================================
@@ -1660,6 +1675,7 @@ app.get("/api/user/:user_id/followers", requireLogin, async (req, res) => {
       SELECT
         u.user_id,
         u.username,
+        u.display_name,
         u.profile_picture,
         EXISTS(
           SELECT 1 FROM user_follows
@@ -1692,6 +1708,7 @@ app.get("/api/user/:user_id/following", requireLogin, async (req, res) => {
       SELECT
         u.user_id,
         u.username,
+        u.display_name,
         u.profile_picture,
         EXISTS(
           SELECT 1 FROM user_follows
