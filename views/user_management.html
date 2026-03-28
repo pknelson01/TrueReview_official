@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueReview - User Management</title>
+    <link rel="icon" href="../TrueReview_logo/Icon_BW.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/user_management.css">
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger-btn" id="hamburger-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <a href="/dashboard" class="mobile-logo">TrueReview</a>
+    </div>
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="/dashboard" id="mobile-dashboard-tab">Dashboard</a>
+        <a href="/watched">Watched</a>
+        <a href="/watchlist">Watchlist</a>
+        <a href="/add-movie">Search</a>
+        <a href="/admin/user-management" style="color:#f5c518;">Admin Panel</a>
+        <span>Following (coming soon...)</span>
+        <span>Top-N (coming soon...)</span>
+        <form action="/logout" method="POST" style="margin:0;">
+            <button type="submit" class="mobile-logout">Logout</button>
+        </form>
+    </div>
+
+    <div class="header-container">
+        <div class="header-bar">
+            <div class="logo-section">
+                <a href="/dashboard" class="logo">TrueReview</a>
+            </div>
+            <div class="center-info">
+                <div class="site-title">Admin Panel</div>
+                <div class="header-search">
+                    <a href="/add-movie" class="search-btn">Search</a>
+                    <a href="/admin/user-management" class="admin-btn">Admin</a>
+                </div>
+            </div>
+            <div class="status-section">
+                <form action="/logout" method="POST">
+                    <button class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <span class="tab">Following (coming soon...)</span>
+            <a href="/watched" class="tab">Watched</a>
+            <a href="/watchlist" class="tab">Watchlist</a>
+            <span class="tab">Top-N (coming soon...)</span>
+            <a href="/dashboard" class="tab" id="dashboard-tab"></a>
+        </div>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <div class="admin-header-label">Admin</div>
+            <h1 class="admin-title">User Management</h1>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div class="modal-overlay" id="status-modal">
+            <div class="modal-box">
+                <div class="modal-title" id="modal-title">Confirm Action</div>
+                <div class="modal-message" id="modal-message"></div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-yes" id="modal-yes">Yes, I'm Sure</button>
+                    <button class="modal-btn modal-btn-no" id="modal-no">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change Password Modal -->
+        <div class="modal-overlay" id="pw-modal">
+            <div class="modal-box">
+                <div class="modal-title" id="pw-modal-title">Change Password</div>
+                <div class="modal-message" id="pw-modal-subtitle"></div>
+                <div class="pw-fields">
+                    <input type="password" id="pw-new" placeholder="New password" class="pw-input" autocomplete="new-password" />
+                    <input type="password" id="pw-confirm" placeholder="Confirm new password" class="pw-input" autocomplete="new-password" />
+                    <div class="pw-error" id="pw-error"></div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-yes" id="pw-submit">Update Password</button>
+                    <button class="modal-btn modal-btn-no" id="pw-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="search-bar-wrap">
+            <input type="text" id="user-search" class="user-search-input" placeholder="Search by username or display name..." />
+        </div>
+
+        <div class="users-table">
+            <div class="table-header-row">
+                <div class="col-user">User</div>
+                <div class="col-stats">
+                    <span>Followers</span>
+                    <span>Following</span>
+                    <span>Kernels</span>
+                    <span>Avg Rating</span>
+                </div>
+                <div class="col-status">Actions</div>
+            </div>
+            <div id="users-list">
+                <div class="loading-msg">Loading users...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load and render users
+        async function loadUsers() {
+            const list = document.getElementById('users-list');
+            try {
+                const res = await fetch('/api/admin/users');
+                const users = await res.json();
+                list.innerHTML = '';
+                users.forEach(u => list.appendChild(buildRow(u)));
+            } catch (err) {
+                list.innerHTML = '<div class="loading-msg">Failed to load users.</div>';
+            }
+        }
+
+        function buildRow(u) {
+            const row = document.createElement('div');
+            row.className = 'user-row';
+            row.dataset.userId = u.user_id;
+
+            const isActive = u.active_yn !== 0;
+
+            row.innerHTML = `
+                <div class="col-user">
+                    <div class="user-username">@${u.username}</div>
+                    <div class="user-display">${u.display_name}</div>
+                </div>
+                <div class="col-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">${u.follower_count}</div>
+                        <div class="stat-label">Followers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${u.following_count}</div>
+                        <div class="stat-label">Following</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${u.popcorn_kernels || 0}</div>
+                        <div class="stat-label">Kernels</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">${u.avg_rating ? parseFloat(u.avg_rating).toFixed(2) : '—'}</div>
+                        <div class="stat-label">Avg Rating</div>
+                    </div>
+                </div>
+                <div class="col-status">
+                    <button class="status-btn ${isActive ? 'active' : 'deactivated'}" data-user-id="${u.user_id}" data-active="${isActive ? 1 : 0}">
+                        ${isActive ? 'Active' : 'Deactivated'}
+                    </button>
+                    <button class="change-pw-btn" data-user-id="${u.user_id}" data-username="${u.username}">
+                        Change Password
+                    </button>
+                </div>
+            `;
+
+            row.querySelector('.status-btn').addEventListener('click', handleStatusClick);
+            row.querySelector('.change-pw-btn').addEventListener('click', handleChangePwClick);
+            return row;
+        }
+
+        function handleStatusClick(e) {
+            const btn = e.currentTarget;
+            const userId = btn.dataset.userId;
+            const isActive = btn.dataset.active === '1';
+            const username = btn.closest('.user-row').querySelector('.user-username').textContent;
+
+            const modal = document.getElementById('status-modal');
+            document.getElementById('modal-title').textContent = isActive ? 'Deactivate Account' : 'Reactivate Account';
+            document.getElementById('modal-message').textContent = isActive
+                ? `Are you sure you want to deactivate ${username}? They will no longer be able to log in.`
+                : `Are you sure you want to reactivate ${username}? They will be able to log in again.`;
+
+            modal.classList.add('active');
+
+            const yes = document.getElementById('modal-yes');
+            const no = document.getElementById('modal-no');
+
+            const cleanup = () => {
+                modal.classList.remove('active');
+                yes.removeEventListener('click', onYes);
+                no.removeEventListener('click', onNo);
+            };
+
+            const onYes = async () => {
+                cleanup();
+                try {
+                    const res = await fetch(`/api/admin/users/${userId}/status`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        const nowActive = data.active_yn === 1;
+                        btn.textContent = nowActive ? 'Active' : 'Deactivated';
+                        btn.className = `status-btn ${nowActive ? 'active' : 'deactivated'}`;
+                        btn.dataset.active = nowActive ? '1' : '0';
+                    }
+                } catch (err) {
+                    console.error('Failed to toggle status:', err);
+                }
+            };
+
+            const onNo = () => cleanup();
+
+            yes.addEventListener('click', onYes);
+            no.addEventListener('click', onNo);
+            modal.addEventListener('click', e => { if (e.target === modal) cleanup(); }, { once: true });
+        }
+
+        function handleChangePwClick(e) {
+            const btn = e.currentTarget;
+            const userId = btn.dataset.userId;
+            const username = btn.dataset.username;
+
+            const modal = document.getElementById('pw-modal');
+            document.getElementById('pw-modal-subtitle').textContent = `@${username}`;
+            document.getElementById('pw-new').value = '';
+            document.getElementById('pw-confirm').value = '';
+            document.getElementById('pw-error').textContent = '';
+            modal.classList.add('active');
+
+            const submit = document.getElementById('pw-submit');
+            const cancel = document.getElementById('pw-cancel');
+
+            const cleanup = () => {
+                modal.classList.remove('active');
+                submit.removeEventListener('click', onSubmit);
+                cancel.removeEventListener('click', onCancel);
+            };
+
+            const onSubmit = async () => {
+                const newPw = document.getElementById('pw-new').value.trim();
+                const confirmPw = document.getElementById('pw-confirm').value.trim();
+                const errEl = document.getElementById('pw-error');
+
+                if (!newPw) { errEl.textContent = 'Please enter a new password.'; return; }
+                if (newPw.length < 8) { errEl.textContent = 'Password must be at least 8 characters.'; return; }
+                if (newPw !== confirmPw) { errEl.textContent = 'Passwords do not match.'; return; }
+
+                try {
+                    const res = await fetch(`/api/admin/users/${userId}/password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ password: newPw })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        cleanup();
+                    } else {
+                        errEl.textContent = data.error || 'Failed to update password.';
+                    }
+                } catch (err) {
+                    errEl.textContent = 'An error occurred. Please try again.';
+                }
+            };
+
+            const onCancel = () => cleanup();
+
+            submit.addEventListener('click', onSubmit);
+            cancel.addEventListener('click', onCancel);
+            modal.addEventListener('click', e => { if (e.target === modal) cleanup(); }, { once: true });
+        }
+
+        document.getElementById('user-search').addEventListener('input', function () {
+            const q = this.value.toLowerCase().trim();
+            document.querySelectorAll('#users-list .user-row').forEach(row => {
+                const username = row.querySelector('.user-username').textContent.toLowerCase();
+                const display = row.querySelector('.user-display').textContent.toLowerCase();
+                row.style.display = (!q || username.includes(q) || display.includes(q)) ? '' : 'none';
+            });
+        });
+
+        loadUsers();
+
+        async function updateDashboardTab() {
+            try {
+                const res = await fetch("/api/user/username");
+                const data = await res.json();
+                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
+                const mob = document.getElementById("mobile-dashboard-tab");
+                if (mob) mob.textContent = data.display_name.toUpperCase();
+            } catch (err) {}
+        }
+        updateDashboardTab();
+
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (hamburgerBtn && mobileMenu) {
+            hamburgerBtn.addEventListener('click', () => {
+                hamburgerBtn.classList.toggle('active');
+                mobileMenu.classList.toggle('active');
+            });
+            mobileMenu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburgerBtn.classList.remove('active');
+                    mobileMenu.classList.remove('active');
+                });
+            });
+        }
+    </script>
+</body>
+</html>

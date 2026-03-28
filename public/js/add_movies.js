@@ -104,6 +104,8 @@ function renderUserResults(users) {
     users.forEach(user => {
         const card = document.createElement("div");
         card.className = "user-result-card";
+        card.style.cursor = "pointer";
+        card.addEventListener("click", () => window.location.href = `/user/${user.username}`);
 
         const profilePicUrl = user.profile_picture
             ? `/uploads/profile_pictures/${user.profile_picture}`

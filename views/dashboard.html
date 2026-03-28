@@ -657,7 +657,7 @@
                 }
 
                 modalBody.innerHTML = users.map(user => `
-                    <div class="user-item">
+                    <div class="user-item" onclick="window.location.href='/user/${user.username}'" style="cursor:pointer;">
                         <div class="user-item-left">
                             <img
                                 src="${user.profile_picture ? `/uploads/profile_pictures/${user.profile_picture}` : '/TrueReview_logo/Icon_BW.png'}"
@@ -669,7 +669,7 @@
                         ${user.user_id !== currentUserId ? `
                             <button
                                 class="${user.is_following ? 'following-btn' : 'follow-btn'}"
-                                onclick="toggleFollow(${user.user_id}, this)"
+                                onclick="event.stopPropagation(); toggleFollow(${user.user_id}, this)"
                                 data-following="${user.is_following}"
                             >
                                 ${user.is_following ? 'Following' : 'Follow'}
@@ -740,5 +740,6 @@
         updateMobileDashboardTab();
     </script>
 
+    <script src="/public/js/admin-button.js"></script>
 </body>
 </html>

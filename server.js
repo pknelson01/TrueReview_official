@@ -134,6 +134,15 @@ function requireLogin(req, res, next) {
   next();
 }
 
+const ADMIN_EMAIL = "pk.elliott11@gmail.com";
+
+async function requireAdmin(req, res, next) {
+  if (!req.session.user_id) return res.redirect("/login");
+  const result = await db.query("SELECT email FROM users WHERE user_id = $1", [req.session.user_id]);
+  if (result.rows[0]?.email !== ADMIN_EMAIL) return res.status(403).sendFile(path.join(__dirname, "views/index.html"));
+  next();
+}
+
 // ----------------------------------------------------
 // Email Validation Function
 // ----------------------------------------------------
@@ -437,7 +446,7 @@ app.post("/login", async (req, res) => {
 
   // Query user by email only
   const sql = `
-    SELECT * FROM users
+    SELECT user_id, username, email, password, active_yn FROM users
     WHERE email = $1
   `;
 
@@ -454,6 +463,10 @@ app.post("/login", async (req, res) => {
 
   if (!passwordMatch) {
     return res.redirect("/login?error=1");
+  }
+
+  if (user.active_yn === 0) {
+    return res.redirect("/login?error=deactivated");
   }
 
   req.session.user_id = user.user_id;
@@ -586,6 +599,90 @@ app.get("/change-password", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "views/change_password.html"));
 });
 
+app.get("/user/:username", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "views/user_profile.html"));
+});
+
+// Public profile data for a user by username
+app.get("/api/profile/:username", requireLogin, async (req, res) => {
+  const viewer_id = req.session.user_id;
+  const { username } = req.params;
+  try {
+    const userQ = await db.query(
+      `SELECT user_id, username, display_name, title, bio, profile_picture, profile_background_photo, popcorn_kernels
+       FROM users WHERE username ILIKE $1`,
+      [username]
+    );
+    if (userQ.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    const user = userQ.rows[0];
+    const target_id = user.user_id;
+
+    const [followData, statsData, favData, lastData, isFollowingData] = await Promise.all([
+      db.query(`SELECT
+        (SELECT COUNT(*) FROM user_follows WHERE following_id = $1) AS follower_count,
+        (SELECT COUNT(*) FROM user_follows WHERE follower_id = $1) AS following_count`,
+        [target_id]),
+      db.query(`SELECT COUNT(*) AS total_movies,
+        ROUND(AVG(user_rating)::numeric, 2) AS avg_rating,
+        COUNT(CASE WHEN user_rating::numeric = 10.0 THEN 1 END) AS ten_star_count
+        FROM watched_list WHERE user_id = $1`, [target_id]),
+      db.query(`SELECT wl.watched_id, wl.user_rating, am.movie_title, am.poster_full_url
+        FROM users u
+        JOIN watched_list wl ON u.user_id = wl.user_id
+        JOIN all_movies am ON am.movie_id = wl.movie_id
+        WHERE u.user_id = $1 AND wl.movie_id = u.favorite_movie`, [target_id]),
+      db.query(`SELECT wl.watched_id, wl.user_rating, am.movie_title, am.poster_full_url
+        FROM watched_list wl
+        JOIN all_movies am ON wl.movie_id = am.movie_id
+        WHERE wl.user_id = $1 ORDER BY wl.watched_id DESC LIMIT 1`, [target_id]),
+      db.query(`SELECT 1 FROM user_follows WHERE follower_id = $1 AND following_id = $2`,
+        [viewer_id, target_id])
+    ]);
+
+    res.json({
+      user,
+      follower_count: followData.rows[0].follower_count,
+      following_count: followData.rows[0].following_count,
+      total_movies: statsData.rows[0].total_movies,
+      avg_rating: statsData.rows[0].avg_rating,
+      ten_star_count: statsData.rows[0].ten_star_count,
+      favorite: favData.rows[0] || null,
+      last: lastData.rows[0] || null,
+      is_following: isFollowingData.rows.length > 0,
+      is_own_profile: viewer_id === target_id,
+    });
+  } catch (err) {
+    console.error("[PROFILE]", err);
+    res.status(500).json({ error: "Failed to load profile" });
+  }
+});
+
+// Public watched list for a user by username
+app.get("/api/profile/:username/watched", requireLogin, async (req, res) => {
+  const { username } = req.params;
+  try {
+    const userQ = await db.query("SELECT user_id FROM users WHERE username ILIKE $1", [username]);
+    if (userQ.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    const target_id = userQ.rows[0].user_id;
+
+    const result = await db.query(`
+      SELECT wl.watched_id, wl.user_rating, wl.review, am.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
+      FROM watched_list wl
+      JOIN all_movies am ON wl.movie_id = am.movie_id
+      WHERE wl.user_id = $1
+      ORDER BY wl.watched_id DESC
+    `, [target_id]);
+
+    res.json(result.rows.map(r => ({
+      ...r,
+      releaseYear: r.movie_release_date ? new Date(r.movie_release_date).getFullYear() : null
+    })));
+  } catch (err) {
+    console.error("[PROFILE WATCHED]", err);
+    res.status(500).json({ error: "Failed to load watched list" });
+  }
+});
+
 app.get("/rate-movie/:movie_id", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "views/rate_movie.html"));
 });
@@ -596,6 +693,73 @@ app.get("/update-movie/:watched_id", requireLogin, (req, res) => {
 
 app.get("/quiz", (req, res) => {
   res.sendFile(path.join(__dirname, "views/quiz.html"));
+});
+
+app.get("/admin/user-management", requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, "views/user_management.html"));
+});
+
+// Get all users ordered by popcorn kernels (admin only)
+app.get("/api/admin/users", requireAdmin, async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT
+        u.user_id,
+        u.username,
+        u.display_name,
+        u.popcorn_kernels,
+        u.active_yn,
+        (SELECT COUNT(*) FROM user_follows WHERE following_id = u.user_id) AS follower_count,
+        (SELECT COUNT(*) FROM user_follows WHERE follower_id = u.user_id) AS following_count,
+        (SELECT ROUND(AVG(user_rating)::numeric, 2) FROM watched_list WHERE user_id = u.user_id) AS avg_rating
+      FROM users u
+      ORDER BY u.popcorn_kernels DESC NULLS LAST
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("[ADMIN] Error fetching users:", err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// Toggle user active status (admin only)
+app.post("/api/admin/users/:user_id/status", requireAdmin, async (req, res) => {
+  const { user_id } = req.params;
+  try {
+    const current = await db.query("SELECT active_yn FROM users WHERE user_id = $1", [user_id]);
+    if (current.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    const newStatus = current.rows[0].active_yn === 1 ? 0 : 1;
+    await db.query("UPDATE users SET active_yn = $1 WHERE user_id = $2", [newStatus, user_id]);
+    console.log(`[ADMIN] User ${user_id} status set to ${newStatus}`);
+    res.json({ success: true, active_yn: newStatus });
+  } catch (err) {
+    console.error("[ADMIN] Error toggling status:", err);
+    res.status(500).json({ error: "Failed to update status" });
+  }
+});
+
+// Admin change password for any user
+app.post("/api/admin/users/:user_id/password", requireAdmin, async (req, res) => {
+  const { user_id } = req.params;
+  const { password } = req.body;
+  if (!password || password.length < 8) {
+    return res.status(400).json({ error: "Password must be at least 8 characters." });
+  }
+  try {
+    const hashed = await bcrypt.hash(password, 12);
+    const result = await db.query("UPDATE users SET password = $1 WHERE user_id = $2 RETURNING user_id", [hashed, user_id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    console.log(`[ADMIN] Password updated for user ${user_id}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[ADMIN] Error updating password:", err);
+    res.status(500).json({ error: "Failed to update password" });
+  }
+});
+
+app.get("/api/user/is-admin", requireLogin, async (req, res) => {
+  const result = await db.query("SELECT email FROM users WHERE user_id = $1", [req.session.user_id]);
+  res.json({ is_admin: result.rows[0]?.email === ADMIN_EMAIL });
 });
 
 // ============================================================================

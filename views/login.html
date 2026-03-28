@@ -43,6 +43,9 @@
         if (error === 'invalid_email') {
             errorBox.textContent = 'Please enter a valid email address.';
             errorBox.classList.add('show');
+        } else if (error === 'deactivated') {
+            errorBox.innerHTML = 'This account has been deactivated. To appeal, visit <a href="https://portfolio-g8ht.onrender.com/" target="_blank" style="color:inherit;font-weight:bold;">my portfolio</a> and click Contact.';
+            errorBox.classList.add('show');
         } else if (error) {
             errorBox.textContent = 'Incorrect email or password.';
             errorBox.classList.add('show');

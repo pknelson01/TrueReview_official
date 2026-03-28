@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueReview - User Profile</title>
+    <link rel="icon" href="../TrueReview_logo/Icon_BW.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/public/css/user_profile.css">
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger-btn" id="hamburger-btn">
+            <span></span><span></span><span></span>
+        </button>
+        <a href="/dashboard" class="mobile-logo">TrueReview</a>
+    </div>
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="/dashboard" id="mobile-dashboard-tab">Dashboard</a>
+        <a href="/watched">Watched</a>
+        <a href="/watchlist">Watchlist</a>
+        <a href="/add-movie">Search</a>
+        <span>Following (coming soon...)</span>
+        <span>Top-N (coming soon...)</span>
+        <form action="/logout" method="POST" style="margin:0;">
+            <button type="submit" class="mobile-logout">Logout</button>
+        </form>
+    </div>
+
+    <div class="header-container">
+        <div class="header-bar">
+            <div class="logo-section">
+                <a href="/dashboard" class="logo">TrueReview</a>
+            </div>
+            <div class="center-info">
+                <div class="site-title">Film Analysis Platform</div>
+                <div class="header-search">
+                    <a href="/add-movie" class="search-btn">Search</a>
+                </div>
+            </div>
+            <div class="status-section">
+                <form action="/logout" method="POST">
+                    <button class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+        <div class="tab-bar">
+            <span class="tab">Following (coming soon...)</span>
+            <a href="/watched" class="tab">Watched</a>
+            <a href="/watchlist" class="tab">Watchlist</a>
+            <span class="tab">Top-N (coming soon...)</span>
+            <a href="/dashboard" class="tab" id="dashboard-tab"></a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+
+            <!-- Profile Section -->
+            <div class="profile-section">
+                <div class="profile-header">
+                    <div class="profile-label">User Profile</div>
+                    <button class="follow-btn" id="follow-btn" style="display:none;">Follow</button>
+                </div>
+                <div class="profile-body">
+                    <div class="top-section">
+
+                        <!-- User Info Column -->
+                        <div class="user-info-column">
+                            <div class="profile-picture-container">
+                                <div class="profile-picture">
+                                    <span id="profile-initials"></span>
+                                    <img id="profile-pic" style="display:none;" />
+                                </div>
+                            </div>
+                            <div class="username" id="display-username">@username</div>
+                            <div class="user-display-name" id="user-display-name">Display Name</div>
+                            <div class="user-title" id="user-title"></div>
+
+                            <div class="stats-grid">
+                                <div class="stat-box clickable" id="followers-stat">
+                                    <div class="stat-number" id="followerCount">0</div>
+                                    <div class="stat-label">Followers</div>
+                                </div>
+                                <div class="stat-box clickable" id="following-stat">
+                                    <div class="stat-number" id="followingCount">0</div>
+                                    <div class="stat-label">Following</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="stat-number" id="totalMovies">0</div>
+                                    <div class="stat-label">Movies Watched</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="stat-number" id="tenStarCount">0</div>
+                                    <div class="stat-label">10/10 Ratings</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="stat-number" id="avgRating">0.0</div>
+                                    <div class="stat-label">Average Rating</div>
+                                </div>
+                                <div class="stat-box">
+                                    <div class="stat-number" id="popcornKernels">0</div>
+                                    <div class="stat-label">Popcorn Kernels</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Movies Column -->
+                        <div class="movies-column">
+                            <div class="movies-grid">
+                                <div class="movie-container">
+                                    <div class="movie-badge">Last Watched</div>
+                                    <div class="movie-display" id="last-watched-card">
+                                        <div class="movie-poster"><span>LAST</span></div>
+                                    </div>
+                                </div>
+                                <div class="movie-container">
+                                    <div class="movie-badge">Favorite Movie</div>
+                                    <div class="movie-display" id="favorite-movie-card">
+                                        <div class="movie-poster"><span>FAV</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Bio -->
+                    <div class="bio-section">
+                        <div class="bio-label">Bio</div>
+                        <div class="bio-text" id="user-bio">No bio available</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Watched List Section -->
+            <div class="watched-list-section">
+                <div class="watched-header">
+                    <div class="watched-title" id="watched-title">Watched List</div>
+                    <div class="total-entries" id="total-entries">TOTAL: 0</div>
+                </div>
+                <div class="watched-body">
+                    <div class="watched-grid" id="watched-grid">
+                        <div class="loading-text">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    <!-- Followers / Following Modal -->
+    <div class="modal-overlay" id="follow-list-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="follow-list-title">Followers</div>
+                <button class="modal-close" id="follow-list-close">Close</button>
+            </div>
+            <div class="modal-body" id="follow-list-body">
+                <div class="empty-list">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    </div>
+
+    <script>
+        const username = window.location.pathname.split('/user/')[1];
+        let targetUserId = null;
+        let isFollowing = false;
+
+        async function loadProfile() {
+            const res = await fetch(`/api/profile/${username}`);
+            if (!res.ok) { window.location.href = '/dashboard'; return; }
+            const data = await res.json();
+            const u = data.user;
+            targetUserId = u.user_id;
+            isFollowing = data.is_following;
+
+            document.title = `TrueReview - ${u.display_name}`;
+            document.getElementById('display-username').textContent = `@${u.username}`;
+            document.getElementById('user-display-name').textContent = u.display_name;
+            document.getElementById('user-title').textContent = u.title ? `"${u.title}"` : '';
+            document.getElementById('user-bio').textContent = u.bio || 'No bio available';
+            document.getElementById('followerCount').textContent = data.follower_count;
+            document.getElementById('followingCount').textContent = data.following_count;
+            document.getElementById('totalMovies').textContent = data.total_movies;
+            document.getElementById('tenStarCount').textContent = data.ten_star_count;
+            document.getElementById('avgRating').textContent = parseFloat(data.avg_rating || 0).toFixed(2);
+            document.getElementById('popcornKernels').textContent = u.popcorn_kernels || 0;
+            document.getElementById('watched-title').textContent = `${u.display_name}'s Watched List`;
+
+            // Profile picture
+            if (u.profile_picture) {
+                const img = document.getElementById('profile-pic');
+                img.src = `/uploads/profile_pictures/${u.profile_picture}`;
+                img.style.display = 'block';
+                document.getElementById('profile-initials').style.display = 'none';
+            } else {
+                const initials = u.display_name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                document.getElementById('profile-initials').textContent = initials;
+            }
+
+            // Last watched card
+            if (data.last?.poster_full_url) {
+                document.getElementById('last-watched-card').innerHTML = `
+                    <img src="${data.last.poster_full_url}" alt="${data.last.movie_title}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='/TrueReview_logo/Poster_BW.png'">
+                    <div class="movie-info-overlay">
+                        <div class="rating-display">${parseFloat(data.last.user_rating).toFixed(1)}</div>
+                        <h3 class="movie-title-overlay">${data.last.movie_title}</h3>
+                    </div>`;
+            }
+
+            // Favorite movie card
+            if (data.favorite?.poster_full_url) {
+                document.getElementById('favorite-movie-card').innerHTML = `
+                    <img src="${data.favorite.poster_full_url}" alt="${data.favorite.movie_title}" style="width:100%;height:100%;object-fit:cover;" onerror="this.src='/TrueReview_logo/Poster_BW.png'">
+                    <div class="movie-info-overlay">
+                        <div class="rating-display">${parseFloat(data.favorite.user_rating).toFixed(1)}</div>
+                        <h3 class="movie-title-overlay">${data.favorite.movie_title}</h3>
+                    </div>`;
+            }
+
+            // Follow button (hide on own profile)
+            if (!data.is_own_profile) {
+                const btn = document.getElementById('follow-btn');
+                btn.style.display = 'inline-block';
+                updateFollowBtn(btn);
+                btn.addEventListener('click', () => toggleFollow(btn));
+            }
+        }
+
+        function updateFollowBtn(btn) {
+            btn.textContent = isFollowing ? 'Following' : 'Follow';
+            btn.className = isFollowing ? 'follow-btn following' : 'follow-btn';
+        }
+
+        async function toggleFollow(btn) {
+            const endpoint = isFollowing ? 'unfollow' : 'follow';
+            try {
+                const res = await fetch(`/api/user/${endpoint}/${targetUserId}`, { method: 'POST' });
+                if (!res.ok) return;
+                isFollowing = !isFollowing;
+                updateFollowBtn(btn);
+                // Update follower count
+                const count = parseInt(document.getElementById('followerCount').textContent);
+                document.getElementById('followerCount').textContent = isFollowing ? count + 1 : count - 1;
+            } catch (err) {
+                console.error('Follow error:', err);
+            }
+        }
+
+        async function loadWatchedList() {
+            const grid = document.getElementById('watched-grid');
+            try {
+                const res = await fetch(`/api/profile/${username}/watched`);
+                const movies = await res.json();
+                document.getElementById('total-entries').textContent = `TOTAL: ${movies.length}`;
+                if (movies.length === 0) {
+                    grid.innerHTML = '<div class="empty-msg">No movies watched yet.</div>';
+                    return;
+                }
+                grid.innerHTML = '';
+                movies.forEach(m => {
+                    const card = document.createElement('a');
+                    card.className = 'watched-card';
+                    card.href = `/rate-movie/${m.movie_id}`;
+                    card.innerHTML = `
+                        <div class="watched-poster-wrapper">
+                            <img src="${m.poster_full_url || '/TrueReview_logo/Poster_BW.png'}" alt="${m.movie_title}" onerror="this.src='/TrueReview_logo/Poster_BW.png'" />
+                            <div class="watched-rating">${parseFloat(m.user_rating).toFixed(1)}</div>
+                        </div>
+                        <div class="watched-info">
+                            <div class="watched-movie-title">${m.movie_title}</div>
+                            <div class="watched-year">${m.releaseYear || ''}</div>
+                        </div>`;
+                    grid.appendChild(card);
+                });
+            } catch (err) {
+                grid.innerHTML = '<div class="empty-msg">Failed to load watched list.</div>';
+            }
+        }
+
+        // Header tab
+        async function updateDashboardTab() {
+            try {
+                const res = await fetch('/api/user/username');
+                const data = await res.json();
+                document.getElementById('dashboard-tab').textContent = data.display_name.toUpperCase();
+                const mob = document.getElementById('mobile-dashboard-tab');
+                if (mob) mob.textContent = data.display_name.toUpperCase();
+            } catch (err) {}
+        }
+
+        // Hamburger
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (hamburgerBtn && mobileMenu) {
+            hamburgerBtn.addEventListener('click', () => {
+                hamburgerBtn.classList.toggle('active');
+                mobileMenu.classList.toggle('active');
+            });
+            mobileMenu.querySelectorAll('a').forEach(l => l.addEventListener('click', () => {
+                hamburgerBtn.classList.remove('active');
+                mobileMenu.classList.remove('active');
+            }));
+        }
+
+        // Followers / Following modal
+        async function openFollowList(type) {
+            if (!targetUserId) return;
+            const modal = document.getElementById('follow-list-modal');
+            const title = document.getElementById('follow-list-title');
+            const body = document.getElementById('follow-list-body');
+            title.textContent = type === 'followers' ? 'Followers' : 'Following';
+            body.innerHTML = '<div class="empty-list">Loading...</div>';
+            modal.classList.add('active');
+
+            try {
+                const res = await fetch(`/api/user/${targetUserId}/${type}`);
+                const users = await res.json();
+                if (!users.length) {
+                    body.innerHTML = `<div class="empty-list">No ${type} yet.</div>`;
+                    return;
+                }
+                body.innerHTML = '';
+                users.forEach(u => {
+                    const item = document.createElement('div');
+                    item.className = 'user-item';
+                    item.style.cursor = 'pointer';
+                    const picUrl = u.profile_picture
+                        ? `/uploads/profile_pictures/${u.profile_picture}`
+                        : '/TrueReview_logo/Icon_BW.png';
+                    item.innerHTML = `
+                        <div class="user-item-left">
+                            <img class="user-avatar" src="${picUrl}" alt="${u.username}" onerror="this.src='/TrueReview_logo/Icon_BW.png'" />
+                            <div>
+                                <div class="user-username">${u.display_name}</div>
+                                <div style="font-size:12px;color:var(--steel);">@${u.username}</div>
+                            </div>
+                        </div>`;
+                    item.addEventListener('click', () => {
+                        window.location.href = `/user/${u.username}`;
+                    });
+                    body.appendChild(item);
+                });
+            } catch (err) {
+                body.innerHTML = `<div class="empty-list">Failed to load ${type}.</div>`;
+            }
+        }
+
+        document.getElementById('followers-stat').addEventListener('click', () => openFollowList('followers'));
+        document.getElementById('following-stat').addEventListener('click', () => openFollowList('following'));
+
+        const followListModal = document.getElementById('follow-list-modal');
+        document.getElementById('follow-list-close').addEventListener('click', () => followListModal.classList.remove('active'));
+        followListModal.addEventListener('click', (e) => {
+            if (e.target === followListModal) followListModal.classList.remove('active');
+        });
+
+        loadProfile();
+        loadWatchedList();
+        updateDashboardTab();
+    </script>
+    <script src="/public/js/admin-button.js"></script>
+</body>
+</html>
