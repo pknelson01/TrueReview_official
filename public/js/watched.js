@@ -47,6 +47,13 @@ function applyFilter(filterType) {
         });
     }
 
+    // Apply theater filters
+    if (filterType === 'theater-yes') {
+        filteredMovies = filteredMovies.filter(movie => movie.in_theater === 1);
+    } else if (filterType === 'theater-no') {
+        filteredMovies = filteredMovies.filter(movie => movie.in_theater !== 1);
+    }
+
     // Apply sorting
     switch(filterType) {
         case 'activity-desc':
@@ -122,6 +129,7 @@ function displayMovies(movies) {
                 >
                 <div class="watched-entry-number">ENTRY_${entryNumber}</div>
                 <div class="hover-overlay">
+                    ${movie.in_theater === 1 ? '<div class="theater-badge">In Theaters</div>' : ''}
                     <div class="rating-display">${movie.user_rating}</div>
                     <div class="rating-label">RATING</div>
                 </div>

@@ -1,0 +1,100 @@
+// ============================================================================
+// TEMPORARY BACKFILL — Populate watched_list metadata columns
+// Used March 2026 to backfill director, actors, genre, runtime, mpa_rating,
+// release_date, and language for all existing watched_list entries.
+// Triggered on user login, fire-and-forget. Skipped already-populated rows.
+// ============================================================================
+
+// --- FUNCTION (was inserted in server.js after ensureMovieInDatabase) ---
+
+async function backfillWatchedListMetadata(user_id) {
+  try {
+    // Only grab rows that haven't been backfilled yet (director IS NULL)
+    const { rows } = await db.query(`
+      SELECT wl.watched_id, wl.movie_id,
+             am.movie_runtime, am.mpaa_rating, am.movie_language, am.movie_release_date
+      FROM watched_list wl
+      JOIN all_movies am ON wl.movie_id = am.movie_id
+      WHERE wl.user_id = $1 AND wl.director IS NULL
+    `, [user_id]);
+
+    if (rows.length === 0) {
+      console.log(`[BACKFILL] User ${user_id}: No movies to backfill — already complete`);
+      return;
+    }
+
+    console.log(`[BACKFILL] User ${user_id}: ${rows.length} movies to backfill`);
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      try {
+        // Single TMDb call per movie — append_to_response bundles credits with details
+        const res = await fetch(
+          `https://api.themoviedb.org/3/movie/${row.movie_id}?api_key=${TMDB_API_KEY}&append_to_response=credits,release_dates`
+        );
+        const data = await res.json();
+
+        // Director(s)
+        const director = data.credits?.crew
+          ?.filter(p => p.job === "Director")
+          .map(d => d.name)
+          .join(", ") || "";
+
+        // Top 15 actors
+        const actors = data.credits?.cast
+          ?.slice(0, 15)
+          .map(a => a.name)
+          .join(", ") || "";
+
+        // Genre names
+        const genre = data.genres
+          ?.map(g => g.name)
+          .join(", ") || "";
+
+        // Runtime — prefer DB value, fall back to TMDb
+        const runtime = row.movie_runtime || data.runtime || null;
+
+        // MPA rating — prefer DB value, fall back to TMDb release_dates
+        let mpa_rating = row.mpaa_rating || null;
+        if (!mpa_rating && data.release_dates?.results) {
+          const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === "US");
+          if (usRelease) {
+            const cert = usRelease.release_dates.find(rd => rd.certification);
+            if (cert) mpa_rating = cert.certification;
+          }
+        }
+
+        // Release date and language — prefer DB values
+        const release_date = row.movie_release_date || data.release_date || null;
+        const language = row.movie_language || data.original_language || null;
+
+        await db.query(`
+          UPDATE watched_list
+          SET director = $1, actors = $2, genre = $3, runtime = $4,
+              mpa_rating = $5, release_date = $6, language = $7
+          WHERE watched_id = $8
+        `, [director, actors, genre, runtime, mpa_rating, release_date, language, row.watched_id]);
+
+        console.log(`[BACKFILL] User ${user_id}: ${i + 1}/${rows.length} — movie ${row.movie_id} done`);
+
+        // Small delay to respect TMDb rate limits
+        await new Promise(r => setTimeout(r, 100));
+
+      } catch (movieErr) {
+        console.error(`[BACKFILL] User ${user_id}: Failed on movie ${row.movie_id}:`, movieErr.message);
+        continue;
+      }
+    }
+
+    console.log(`[BACKFILL] User ${user_id}: Backfill complete`);
+  } catch (err) {
+    console.error(`[BACKFILL] User ${user_id}: Fatal error:`, err);
+  }
+}
+
+// --- LOGIN HOOK (was inserted in the POST /login route, before res.redirect) ---
+
+// TEMPORARY BACKFILL — fire-and-forget, does not block login (DELETE AFTER ALL USERS BACKFILLED)
+backfillWatchedListMetadata(user.user_id).catch(err =>
+  console.error(`[BACKFILL] Fatal error for user ${user.user_id}:`, err)
+);

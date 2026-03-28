@@ -696,6 +696,22 @@
             opacity: 1;
         }
 
+        .theater-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Oswald', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #f5c518;
+            border: 2px solid #f5c518;
+            padding: 5px 12px;
+            white-space: nowrap;
+        }
+
         .rating-display {
             position: absolute;
             top: 10px;
@@ -717,6 +733,10 @@
         }
 
         .movie-title {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            right: 15px;
             font-family: 'Oswald', sans-serif;
             font-size: 16px;
             font-weight: 700;
@@ -724,7 +744,7 @@
             text-transform: uppercase;
             letter-spacing: -1px;
             line-height: 1.1;
-            margin-bottom: 10px;
+            margin-bottom: 0;
         }
 
         .movie-meta {

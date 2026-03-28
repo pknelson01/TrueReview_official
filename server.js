@@ -123,8 +123,21 @@ const backgroundStorage = multer.diskStorage({
   },
 });
 
+const memoryStorage = multer.diskStorage({
+  destination: "./uploads/memory_images",
+  filename: (req, file, cb) => {
+    cb(
+      null,
+      `memory_${req.params.watched_id}_${Date.now()}${path.extname(
+        file.originalname
+      )}`
+    );
+  },
+});
+
 const uploadProfilePic = multer({ storage: profilePicStorage });
 const uploadBackground = multer({ storage: backgroundStorage });
+const uploadMemory = multer({ storage: memoryStorage });
 
 // ----------------------------------------------------
 // Auth Middleware
@@ -469,6 +482,7 @@ app.post("/login", async (req, res) => {
 
   req.session.user_id = user.user_id;
   console.log(`[LOGIN] User logged in - ID: ${user.user_id}, Username: ${user.username}, Email: ${email}`);
+
   res.redirect("/welcome");
 });
 
@@ -850,7 +864,7 @@ app.get("/api/dashboard", requireLogin, async (req, res) => {
   req.session.last_viewed_ten_star_count = currentTenStarCount;
 
   const favQ = `
-    SELECT wl.watched_id, wl.user_rating, am.movie_title, am.poster_full_url
+    SELECT wl.watched_id, wl.user_rating, wl.in_theater, am.movie_title, am.poster_full_url
     FROM users u
     JOIN watched_list wl ON u.user_id = wl.user_id
     JOIN all_movies am ON am.movie_id = wl.movie_id
@@ -861,7 +875,7 @@ app.get("/api/dashboard", requireLogin, async (req, res) => {
   const favorite = fav.rows.length ? fav.rows[0] : null;
 
   const lastQ = `
-    SELECT wl.watched_id, wl.user_rating, am.movie_title, am.poster_full_url
+    SELECT wl.watched_id, wl.user_rating, wl.in_theater, am.movie_title, am.poster_full_url
     FROM watched_list wl
     JOIN all_movies am ON wl.movie_id = am.movie_id
     WHERE wl.user_id = $1
@@ -946,7 +960,7 @@ app.get("/api/watched", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
 
   const sql = `
-    SELECT wl.watched_id, wl.user_rating, am.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
+    SELECT wl.watched_id, wl.user_rating, wl.in_theater, am.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
     FROM watched_list wl
     JOIN all_movies am ON wl.movie_id = am.movie_id
     WHERE wl.user_id = $1
@@ -993,7 +1007,7 @@ app.get("/api/watched/:watched_id", requireLogin, async (req, res) => {
   const watched_id = req.params.watched_id;
 
   const sql = `
-    SELECT wl.watched_id, wl.user_rating, wl.review,
+    SELECT wl.watched_id, wl.user_rating, wl.review, wl.watched_date, wl.in_theater, wl.memory,
            am.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
     FROM watched_list wl
     JOIN all_movies am ON wl.movie_id = am.movie_id
@@ -1260,6 +1274,49 @@ app.post("/api/upload/background", requireLogin, uploadBackground.single("file")
   res.json({ success: true, filename });
 });
 
+/* ---------------- MEMORY IMAGE ---------------- */
+app.post("/api/upload/memory/:watched_id", requireLogin, uploadMemory.single("file"), async (req, res) => {
+  const user_id = req.session.user_id;
+  const watched_id = req.params.watched_id;
+  const filename = req.file.filename;
+
+  // Verify ownership
+  const check = await db.query(
+    "SELECT watched_id FROM watched_list WHERE watched_id = $1 AND user_id = $2",
+    [watched_id, user_id]
+  );
+  if (check.rows.length === 0) {
+    return res.status(403).json({ error: "Not authorized" });
+  }
+
+  await db.query(
+    "UPDATE watched_list SET memory = $1 WHERE watched_id = $2",
+    [filename, watched_id]
+  );
+
+  res.json({ success: true, filename });
+});
+
+app.delete("/api/upload/memory/:watched_id", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const watched_id = req.params.watched_id;
+
+  const check = await db.query(
+    "SELECT memory FROM watched_list WHERE watched_id = $1 AND user_id = $2",
+    [watched_id, user_id]
+  );
+  if (check.rows.length === 0) {
+    return res.status(403).json({ error: "Not authorized" });
+  }
+
+  await db.query(
+    "UPDATE watched_list SET memory = NULL WHERE watched_id = $1",
+    [watched_id]
+  );
+
+  res.json({ success: true });
+});
+
 // ============================================================================
 // PROFILE UPDATE
 // ============================================================================
@@ -1519,7 +1576,7 @@ app.get("/api/movie/:movie_id", requireLogin, async (req, res) => {
 app.post("/add-movie/:movie_id", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
   const movie_id = req.params.movie_id;
-  const { rating, review } = req.body;
+  const { rating, review, watched_date, in_theater } = req.body;
 
   try {
     // Ensure movie exists in all_movies table
@@ -1528,12 +1585,54 @@ app.post("/add-movie/:movie_id", requireLogin, async (req, res) => {
       return res.status(500).send("Failed to fetch movie data");
     }
 
+    // Fetch metadata from TMDb for watched_list columns
+    let director = null, actors = null, genre = null, runtime = null;
+    let mpa_rating = null, release_date = null, language = null;
+    try {
+      const tmdbRes = await fetch(
+        `https://api.themoviedb.org/3/movie/${movie_id}?api_key=${TMDB_API_KEY}&append_to_response=credits,release_dates`
+      );
+      const tmdbData = await tmdbRes.json();
+
+      director = tmdbData.credits?.crew
+        ?.filter(p => p.job === "Director")
+        .map(d => d.name)
+        .join(", ") || "";
+
+      actors = tmdbData.credits?.cast
+        ?.slice(0, 15)
+        .map(a => a.name)
+        .join(", ") || "";
+
+      genre = tmdbData.genres
+        ?.map(g => g.name)
+        .join(", ") || "";
+
+      runtime = tmdbData.runtime || null;
+      release_date = tmdbData.release_date || null;
+      language = tmdbData.original_language || null;
+
+      // MPA rating from release_dates
+      const usRelease = tmdbData.release_dates?.results?.find(r => r.iso_3166_1 === "US");
+      if (usRelease) {
+        const cert = usRelease.release_dates.find(rd => rd.certification);
+        if (cert) mpa_rating = cert.certification;
+      }
+    } catch (tmdbErr) {
+      console.error(`[ADD MOVIE] Failed to fetch TMDb metadata for ${movie_id}:`, tmdbErr.message);
+    }
+
+    const watchedDateValue = watched_date && watched_date.trim() !== '' ? watched_date : new Date().toISOString().split('T')[0];
+    const inTheaterValue = in_theater === "1" ? 1 : 0;
+
     const sql = `
-      INSERT INTO watched_list (user_id, movie_id, user_rating, review)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO watched_list (user_id, movie_id, user_rating, review, watched_date, in_theater,
+                                director, actors, genre, runtime, mpa_rating, release_date, language)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     `;
 
-    await db.query(sql, [user_id, movie_id, rating, review || null]);
+    await db.query(sql, [user_id, movie_id, rating, review || null, watchedDateValue, inTheaterValue,
+                         director, actors, genre, runtime, mpa_rating, release_date, language]);
 
     // Remove from watchlist if it exists there
     await db.query(
@@ -1554,7 +1653,7 @@ app.post("/add-movie/:movie_id", requireLogin, async (req, res) => {
       [kernelsToAdd, user_id]
     );
 
-    console.log(`[MOVIE ADDED] User ${user_id} added movie ${movie_id} - Rating: ${rating}, Has Review: ${!!(review && review.trim())}, Kernels +${kernelsToAdd}`);
+    console.log(`[MOVIE ADDED] User ${user_id} added movie ${movie_id} - Rating: ${rating}, Has Review: ${!!(review && review.trim())}, In Theater: ${inTheaterValue === 1}, Watched Date: ${watchedDateValue}, Kernels +${kernelsToAdd}`);
 
     res.redirect("/watched");
   } catch (err) {
@@ -1567,7 +1666,7 @@ app.post("/add-movie/:movie_id", requireLogin, async (req, res) => {
 app.post("/update-movie/:watched_id", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
   const watched_id = req.params.watched_id;
-  const { rating, review } = req.body;
+  const { rating, review, watched_date, in_theater } = req.body;
 
   // First, get the current review status
   const checkSql = `
@@ -1584,16 +1683,18 @@ app.post("/update-movie/:watched_id", requireLogin, async (req, res) => {
   const hadReview = oldReview && oldReview.trim() !== '';
   const nowHasReview = review && review.trim() !== '';
 
+  const inTheaterValue = in_theater === "1" ? 1 : 0;
+
   // Update the movie entry
   const sql = `
     UPDATE watched_list
-    SET user_rating = $1, review = $2
-    WHERE watched_id = $3 AND user_id = $4
+    SET user_rating = $1, review = $2, watched_date = $3, in_theater = $4
+    WHERE watched_id = $5 AND user_id = $6
   `;
 
-  await db.query(sql, [rating, review || null, watched_id, user_id]);
+  await db.query(sql, [rating, review || null, watched_date || null, inTheaterValue, watched_id, user_id]);
 
-  console.log(`[MOVIE UPDATED] User ${user_id} updated watched_id ${watched_id} - Rating: ${rating}, Had Review: ${hadReview}, Now Has Review: ${nowHasReview}`);
+  console.log(`[MOVIE UPDATED] User ${user_id} updated watched_id ${watched_id} - Rating: ${rating}, Had Review: ${hadReview}, Now Has Review: ${nowHasReview}, In Theater: ${inTheaterValue === 1}, Watched Date: ${watched_date || 'unchanged'}`);
 
   // Award +5 kernels if a review is being added for the first time
   if (!hadReview && nowHasReview) {

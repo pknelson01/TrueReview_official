@@ -69,6 +69,24 @@
                 <h2 id="movie-title" class="title"></h2>
                 <p id="movie-year" class="year"></p>
             </div>
+            <div class="movie-extra-info" id="movie-extra-info">
+                <div class="extra-item" id="extra-mpa" style="display:none;">
+                    <span class="extra-label">Rating</span>
+                    <span class="extra-value" id="extra-mpa-value"></span>
+                </div>
+                <div class="extra-item" id="extra-director" style="display:none;">
+                    <span class="extra-label">Director</span>
+                    <span class="extra-value" id="extra-director-value"></span>
+                </div>
+                <div class="extra-item" id="extra-genres" style="display:none;">
+                    <span class="extra-label">Genres</span>
+                    <span class="extra-value" id="extra-genres-value"></span>
+                </div>
+                <div class="extra-item" id="extra-cast" style="display:none;">
+                    <span class="extra-label">Cast</span>
+                    <span class="extra-value" id="extra-cast-value"></span>
+                </div>
+            </div>
         </div>
 
         <form id="rate-form" method="POST">
@@ -84,6 +102,15 @@
                 value="5.0"
                 required
             />
+
+            <div class="option-buttons">
+                <div class="option-btn-group">
+                    <button type="button" class="option-btn" id="date-btn">Date</button>
+                    <input type="date" id="watched-date" name="watched_date" class="date-picker-hidden" />
+                </div>
+                <button type="button" class="option-btn" id="theater-btn">In-Theaters</button>
+                <input type="hidden" id="in-theater" name="in_theater" value="0" />
+            </div>
 
             <label for="review">Review (optional):</label>
             <textarea id="review" name="review" rows="4"></textarea>
@@ -126,6 +153,60 @@
     }
 
     loadMovie();
+
+    // Load extra movie details (director, cast, genres, MPA rating)
+    async function loadMovieDetails() {
+        try {
+            const res = await fetch(`/api/movie-details/${movieId}`);
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (data.mpaa_rating) {
+                document.getElementById("extra-mpa-value").textContent = data.mpaa_rating;
+                document.getElementById("extra-mpa").style.display = "flex";
+            }
+            if (data.director) {
+                document.getElementById("extra-director-value").textContent = data.director;
+                document.getElementById("extra-director").style.display = "flex";
+            }
+            if (data.genres?.length) {
+                document.getElementById("extra-genres-value").textContent = data.genres.join(", ");
+                document.getElementById("extra-genres").style.display = "flex";
+            }
+            if (data.cast?.length) {
+                document.getElementById("extra-cast-value").textContent = data.cast.join(", ");
+                document.getElementById("extra-cast").style.display = "flex";
+            }
+        } catch (err) {
+            console.error("Error loading movie details:", err);
+        }
+    }
+    loadMovieDetails();
+
+    // Date button — clicking opens native date picker overlay
+    const dateBtn = document.getElementById("date-btn");
+    const datePicker = document.getElementById("watched-date");
+    dateBtn.addEventListener("click", () => {
+        datePicker.showPicker();
+    });
+    datePicker.addEventListener("change", () => {
+        if (datePicker.value) {
+            const [y, m, d] = datePicker.value.split("-");
+            dateBtn.textContent = `${m}/${d}/${y}`;
+            dateBtn.classList.add("active");
+        } else {
+            dateBtn.textContent = "Date";
+            dateBtn.classList.remove("active");
+        }
+    });
+
+    // In-Theaters toggle
+    const theaterBtn = document.getElementById("theater-btn");
+    const theaterInput = document.getElementById("in-theater");
+    theaterBtn.addEventListener("click", () => {
+        const isActive = theaterBtn.classList.toggle("active");
+        theaterInput.value = isActive ? "1" : "0";
+    });
 
     // Update rating display as slider moves
     const ratingSlider = document.getElementById("rating");

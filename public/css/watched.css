@@ -412,6 +412,22 @@
             opacity: 1;
         }
 
+        .theater-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #f5c518;
+            border: 2px solid #f5c518;
+            padding: 6px 14px;
+            white-space: nowrap;
+        }
+
         .rating-display {
             position: absolute;
             top: 20px;

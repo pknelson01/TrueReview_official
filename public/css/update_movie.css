@@ -383,6 +383,117 @@
             margin-bottom: 15px;
         }
 
+        .option-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            align-items: center;
+        }
+
+        .option-btn-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .option-btn {
+            background: transparent;
+            border: 1px solid var(--steel);
+            color: var(--steel);
+            padding: 6px 14px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option-btn:hover {
+            border-color: var(--white);
+            color: var(--white);
+        }
+
+        .option-btn.active {
+            background: transparent;
+            border-color: #f5c518;
+            color: #f5c518;
+        }
+
+        .date-picker-hidden {
+            position: absolute;
+            visibility: hidden;
+            width: 0;
+            height: 0;
+        }
+
+        .memory-modal-box {
+            max-width: 700px;
+        }
+
+        .memory-modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .memory-image {
+            max-width: 100%;
+            max-height: 60vh;
+            object-fit: contain;
+            border: 2px solid var(--white);
+        }
+
+        .memory-delete-btn {
+            background: transparent;
+            border: 2px solid #ff6666;
+            color: #ff6666;
+            padding: 8px 16px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .memory-delete-btn:hover {
+            background: #ff6666;
+            color: var(--charcoal);
+        }
+
+        .memory-dropzone {
+            width: 100%;
+            min-height: 200px;
+            border: 2px dashed var(--steel);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 40px;
+        }
+
+        .memory-dropzone p {
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--steel);
+        }
+
+        .memory-dropzone:hover,
+        .memory-dropzone.dragover {
+            border-color: var(--white);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .memory-dropzone.dragover p {
+            color: var(--white);
+        }
+
         .submit-btn {
             width: 100%;
             font-family: 'Oswald', sans-serif;

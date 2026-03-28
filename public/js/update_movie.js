@@ -1,4 +1,5 @@
 const watchedId = window.location.pathname.split("/").pop();
+let currentMemory = null;
 
 // Load existing watched entry details
 async function loadWatchedEntry() {
@@ -23,6 +24,24 @@ async function loadWatchedEntry() {
     document.getElementById("rating").value = rating;
     document.getElementById("rating-display").textContent = rating.toFixed(1);
     document.getElementById("review").value = data.review || "";
+
+    // Pre-fill watched_date
+    if (data.watched_date) {
+        const dateStr = new Date(data.watched_date).toISOString().split("T")[0];
+        document.getElementById("watched-date").value = dateStr;
+        const [y, m, d] = dateStr.split("-");
+        document.getElementById("date-btn").textContent = `${m}/${d}/${y}`;
+        document.getElementById("date-btn").classList.add("active");
+    }
+
+    // Pre-fill in_theater
+    if (data.in_theater === 1) {
+        document.getElementById("theater-btn").classList.add("active");
+        document.getElementById("in-theater").value = "1";
+    }
+
+    // Store memory filename
+    currentMemory = data.memory || null;
 
     // Set form actions
     document.getElementById("update-form").action = `/update-movie/${watchedId}`;
@@ -66,6 +85,123 @@ const ratingDisplay = document.getElementById("rating-display");
 ratingSlider.addEventListener("input", (e) => {
     const value = parseFloat(e.target.value).toFixed(1);
     ratingDisplay.textContent = value;
+});
+
+// Date button — clicking opens native date picker overlay
+const dateBtn = document.getElementById("date-btn");
+const datePicker = document.getElementById("watched-date");
+dateBtn.addEventListener("click", () => {
+    datePicker.showPicker();
+});
+datePicker.addEventListener("change", () => {
+    if (datePicker.value) {
+        const [y, m, d] = datePicker.value.split("-");
+        dateBtn.textContent = `${m}/${d}/${y}`;
+        dateBtn.classList.add("active");
+    } else {
+        dateBtn.textContent = "Date";
+        dateBtn.classList.remove("active");
+    }
+});
+
+// In-Theaters toggle
+const theaterBtn = document.getElementById("theater-btn");
+const theaterInput = document.getElementById("in-theater");
+theaterBtn.addEventListener("click", () => {
+    const isActive = theaterBtn.classList.toggle("active");
+    theaterInput.value = isActive ? "1" : "0";
+});
+
+// Memory button — open modal
+const memoryBtn = document.getElementById("memory-btn");
+const memoryModal = document.getElementById("memory-modal");
+const memoryModalBody = document.getElementById("memory-modal-body");
+const memoryModalTitle = document.getElementById("memory-modal-title");
+const memoryModalClose = document.getElementById("memory-modal-close");
+
+memoryBtn.addEventListener("click", () => {
+    if (currentMemory) {
+        // Show existing image
+        memoryModalTitle.textContent = "Memory";
+        memoryModalBody.innerHTML = `
+            <img src="/uploads/memory_images/${currentMemory}" class="memory-image" alt="Memory" />
+            <button type="button" class="memory-delete-btn" id="memory-delete-btn">Remove Memory</button>
+        `;
+        document.getElementById("memory-delete-btn").addEventListener("click", async () => {
+            try {
+                const res = await fetch(`/api/upload/memory/${watchedId}`, { method: "DELETE" });
+                if (res.ok) {
+                    currentMemory = null;
+                    memoryModal.classList.remove("active");
+                }
+            } catch (err) {
+                console.error("Error deleting memory:", err);
+            }
+        });
+    } else {
+        // Show upload dropzone
+        memoryModalTitle.textContent = "Add Memory";
+        memoryModalBody.innerHTML = `
+            <div class="memory-dropzone" id="memory-dropzone">
+                <p>Drop an image here or click to select</p>
+                <input type="file" id="memory-file-input" accept="image/*" style="display:none;" />
+            </div>
+        `;
+        const dropzone = document.getElementById("memory-dropzone");
+        const fileInput = document.getElementById("memory-file-input");
+
+        dropzone.addEventListener("click", () => fileInput.click());
+
+        dropzone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            dropzone.classList.add("dragover");
+        });
+        dropzone.addEventListener("dragleave", () => {
+            dropzone.classList.remove("dragover");
+        });
+        dropzone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            dropzone.classList.remove("dragover");
+            if (e.dataTransfer.files.length > 0) {
+                uploadMemoryFile(e.dataTransfer.files[0]);
+            }
+        });
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files.length > 0) {
+                uploadMemoryFile(fileInput.files[0]);
+            }
+        });
+    }
+    memoryModal.classList.add("active");
+});
+
+async function uploadMemoryFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const res = await fetch(`/api/upload/memory/${watchedId}`, {
+            method: "POST",
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            currentMemory = data.filename;
+            memoryModal.classList.remove("active");
+        }
+    } catch (err) {
+        console.error("Error uploading memory:", err);
+    }
+}
+
+// Close memory modal
+memoryModalClose.addEventListener("click", () => {
+    memoryModal.classList.remove("active");
+});
+memoryModal.addEventListener("click", (e) => {
+    if (e.target === memoryModal) {
+        memoryModal.classList.remove("active");
+    }
 });
 
 loadWatchedEntry();

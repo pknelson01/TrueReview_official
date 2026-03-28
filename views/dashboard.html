@@ -390,6 +390,7 @@
                             <img src="${data.last.poster_full_url}" alt="${data.last.movie_title}" onerror="this.src='/TrueReview_logo/Poster_BW.png'">
                         </div>
                         <div class="movie-info">
+                            ${data.last.in_theater === 1 ? '<div class="theater-badge">In Theaters</div>' : ''}
                             <div class="rating-display">${data.last.user_rating}</div>
                             <div class="rating-label">RATING</div>
                             <h3 class="movie-title">${data.last.movie_title}</h3>
@@ -407,6 +408,7 @@
                             <img src="${data.favorite.poster_full_url}" alt="${data.favorite.movie_title}" onerror="this.src='/TrueReview_logo/Poster_BW.png'">
                         </div>
                         <div class="movie-info">
+                            ${data.favorite.in_theater === 1 ? '<div class="theater-badge">In Theaters</div>' : ''}
                             <div class="rating-display">${data.favorite.user_rating || 'N/A'}</div>
                             <div class="rating-label">RATING</div>
                             <h3 class="movie-title">${data.favorite.movie_title}</h3>

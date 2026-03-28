@@ -25,6 +25,19 @@
         </div>
     </div>
 
+    <!-- Memory Modal -->
+    <div class="modal-overlay" id="memory-modal">
+        <div class="modal-box memory-modal-box">
+            <div class="modal-title" id="memory-modal-title">Memory</div>
+            <div class="memory-modal-body" id="memory-modal-body">
+                <!-- Populated dynamically: image viewer or upload dropzone -->
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-no" id="memory-modal-close">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Favorite Confirmation Modal -->
     <div class="modal-overlay" id="favorite-modal">
         <div class="modal-box">
@@ -128,6 +141,16 @@
                 value="5.0"
                 required
             />
+
+            <div class="option-buttons">
+                <div class="option-btn-group">
+                    <button type="button" class="option-btn" id="date-btn">Date</button>
+                    <input type="date" id="watched-date" name="watched_date" class="date-picker-hidden" />
+                </div>
+                <button type="button" class="option-btn" id="theater-btn">In-Theaters</button>
+                <input type="hidden" id="in-theater" name="in_theater" value="0" />
+                <button type="button" class="option-btn" id="memory-btn">Memory</button>
+            </div>
 
             <label for="review">Review (optional):</label>
             <textarea id="review" name="review" rows="5"></textarea>
