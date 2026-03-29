@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueReview - Stats</title>
+    <link rel="icon" href="../TrueReview_logo/Icon_BW.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="/public/css/stats.css">
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger-btn" id="hamburger-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <a href="/dashboard" class="mobile-logo">TrueReview</a>
+    </div>
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="/dashboard" id="mobile-dashboard-tab">Dashboard</a>
+        <a href="/watched">Watched</a>
+        <a href="/watchlist">Watchlist</a>
+        <a href="/add-movie">Search</a>
+        <a href="/stats">Stats</a>
+        <span>Goals (coming soon...)</span>
+        <form action="/logout" method="POST" style="margin:0;">
+            <button type="submit" class="mobile-logout">Logout</button>
+        </form>
+    </div>
+
+    <div class="header-container">
+        <div class="header-bar">
+            <div class="logo-section">
+                <a href="/dashboard" class="logo">TrueReview</a>
+            </div>
+            <div class="center-info">
+                <div class="site-title">Film Analysis Platform</div>
+                <div class="header-search">
+                    <a href="/add-movie" class="search-btn">Search</a>
+                </div>
+            </div>
+            <div class="status-section">
+                <form action="/logout" method="POST">
+                    <button class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <a href="/stats" class="tab active">STATS</a>
+            <a href="/watched" class="tab">WATCHED</a>
+            <a href="/watchlist" class="tab">WATCHLIST</a>
+            <span class="tab">GOALS (coming soon...)</span>
+            <a href="/dashboard" class="tab" id="dashboard-tab"></a>
+        </div>
+    </div>
+
+    <!-- Stats Drill-Down Modal -->
+    <div class="modal-overlay" id="stats-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title" id="stats-modal-title"></div>
+                <button class="modal-close" id="stats-modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="stats-modal-body"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-page-header">
+            <h1 class="stats-title">Your Stats</h1>
+        </div>
+
+        <div class="stats-loading" id="stats-loading">Loading stats...</div>
+
+        <div class="stats-content" id="stats-content" style="display:none;">
+
+            <!-- Most Watched Section -->
+            <div class="stats-section">
+                <div class="section-header">MOST WATCHED</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="card-header-row">
+                            <div class="card-title">Top Actors</div>
+                            <button class="actor-toggle active" id="most-watched-toggle" data-scope="main">Main 5</button>
+                        </div>
+                        <ol class="stat-list" id="most-watched-actors"></ol>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-title">Top Directors</div>
+                        <ol class="stat-list" id="most-watched-directors"></ol>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-title">Top Genres</div>
+                        <ol class="stat-list" id="most-watched-genres"></ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Highest Rated Section -->
+            <div class="stats-section">
+                <div class="section-header">HIGHEST RATED</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="card-header-row">
+                            <div>
+                                <div class="card-title">Top Actors</div>
+                                <div class="card-subtitle" id="highest-rated-subtitle">min. 3 movies, top 5 billed</div>
+                            </div>
+                            <button class="actor-toggle active" id="highest-rated-toggle" data-scope="main">Main 5</button>
+                        </div>
+                        <ol class="stat-list" id="highest-rated-actors"></ol>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-title">Top Directors</div>
+                        <div class="card-subtitle">min. 3 movies</div>
+                        <ol class="stat-list" id="highest-rated-directors"></ol>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-title">Top Genres</div>
+                        <div class="card-subtitle">min. 3 movies</div>
+                        <ol class="stat-list" id="highest-rated-genres"></ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theater Stats Section -->
+            <div class="stats-section">
+                <div class="section-header">THEATER EXPERIENCE</div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="card-title">Avg Theater Rating</div>
+                        <div class="big-number" id="theater-avg-rating">--</div>
+                        <div class="big-number-sub" id="theater-count"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-title">Total Time in Theaters</div>
+                        <div class="big-number" id="theater-total-minutes">--</div>
+                        <div class="big-number-sub" id="theater-total-hours"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="card-title">Top Genres in Theaters</div>
+                        <ol class="stat-list" id="theater-top-genres"></ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        const hamburgerBtn = document.getElementById('hamburger-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener('click', () => {
+                hamburgerBtn.classList.toggle('active');
+                mobileMenu.classList.toggle('active');
+            });
+        }
+
+        // Update dashboard tab with display_name
+        async function updateDashboardTab() {
+            try {
+                const res = await fetch("/api/user/username");
+                const data = await res.json();
+                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
+            } catch (err) {
+                console.error("Error loading display name:", err);
+            }
+        }
+        updateDashboardTab();
+
+        function getType(nameKey) {
+            if (nameKey === 'actor') return 'actor';
+            if (nameKey === 'director') return 'director';
+            return 'genre';
+        }
+
+        function renderCountList(containerId, items, nameKey) {
+            const el = document.getElementById(containerId);
+            if (!items || items.length === 0) {
+                el.innerHTML = '<li class="no-data">Not enough data yet</li>';
+                return;
+            }
+            el.innerHTML = items.map((item, i) => `
+                <li>
+                    <span class="rank">${i + 1}.</span>
+                    <span class="name clickable-name" data-type="${getType(nameKey)}" data-name="${item[nameKey]}">${item[nameKey]}</span>
+                    <span class="value">${item.count} ${parseInt(item.count) === 1 ? 'movie' : 'movies'}</span>
+                </li>
+            `).join('');
+        }
+
+        function renderRatedList(containerId, items, nameKey) {
+            const el = document.getElementById(containerId);
+            if (!items || items.length === 0) {
+                el.innerHTML = '<li class="no-data">Not enough data yet</li>';
+                return;
+            }
+            el.innerHTML = items.map((item, i) => `
+                <li>
+                    <span class="rank">${i + 1}.</span>
+                    <span class="name clickable-name" data-type="${getType(nameKey)}" data-name="${item[nameKey]}">${item[nameKey]}</span>
+                    <span class="value">${item.avg_rating}/10 <span class="count-note">(${item.count})</span></span>
+                </li>
+            `).join('');
+        }
+
+        let currentActorScope = 'main';
+
+        async function loadStats(scope) {
+            const actorParam = scope === 'all' ? '?actor_scope=all' : '';
+            try {
+                const res = await fetch('/api/stats' + actorParam);
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                const data = await res.json();
+
+                // Most Watched
+                renderCountList('most-watched-actors', data.most_watched_actors, 'actor');
+                renderCountList('most-watched-directors', data.most_watched_directors, 'director');
+                renderCountList('most-watched-genres', data.most_watched_genres, 'genre');
+
+                // Highest Rated
+                renderRatedList('highest-rated-actors', data.highest_rated_actors, 'actor');
+                renderRatedList('highest-rated-directors', data.highest_rated_directors, 'director');
+                renderRatedList('highest-rated-genres', data.highest_rated_genres, 'genre');
+
+                // Update subtitle
+                document.getElementById('highest-rated-subtitle').textContent =
+                    scope === 'all' ? 'min. 3 movies, all actors' : 'min. 3 movies, top 5 billed';
+
+                // Theater Stats
+                const theaterAvg = document.getElementById('theater-avg-rating');
+                const theaterCount = document.getElementById('theater-count');
+                if (data.theater_avg_rating) {
+                    theaterAvg.textContent = data.theater_avg_rating + '/10';
+                    theaterCount.textContent = `across ${data.theater_count} ${parseInt(data.theater_count) === 1 ? 'movie' : 'movies'}`;
+                } else {
+                    theaterAvg.textContent = '--';
+                    theaterCount.textContent = 'No theater viewings yet';
+                }
+
+                // Theater total minutes
+                const totalMin = data.theater_total_minutes || 0;
+                const hours = Math.floor(totalMin / 60);
+                const mins = totalMin % 60;
+                document.getElementById('theater-total-minutes').textContent = totalMin.toLocaleString() + ' min';
+                document.getElementById('theater-total-hours').textContent = totalMin > 0
+                    ? `${hours}h ${mins}m`
+                    : 'No theater viewings yet';
+
+                renderCountList('theater-top-genres', data.theater_top_genres, 'genre');
+
+                document.getElementById('stats-loading').style.display = 'none';
+                document.getElementById('stats-content').style.display = 'block';
+
+            } catch (err) {
+                console.error('Stats error:', err);
+                document.getElementById('stats-loading').textContent = 'Failed to load stats.';
+            }
+        }
+
+        loadStats(currentActorScope);
+
+        // Drill-down modal
+        const statsModal = document.getElementById('stats-modal');
+        const statsModalTitle = document.getElementById('stats-modal-title');
+        const statsModalBody = document.getElementById('stats-modal-body');
+        const statsModalClose = document.getElementById('stats-modal-close');
+
+        statsModalClose.addEventListener('click', () => statsModal.classList.remove('active'));
+        statsModal.addEventListener('click', (e) => {
+            if (e.target === statsModal) statsModal.classList.remove('active');
+        });
+
+        document.addEventListener('click', async (e) => {
+            const target = e.target.closest('.clickable-name');
+            if (!target) return;
+
+            const type = target.dataset.type;
+            const name = target.dataset.name;
+
+            statsModalTitle.textContent = name;
+            statsModalBody.innerHTML = '<div class="modal-loading">Loading...</div>';
+            statsModal.classList.add('active');
+
+            try {
+                const res = await fetch(`/api/stats/movies?type=${encodeURIComponent(type)}&name=${encodeURIComponent(name)}`);
+                const data = await res.json();
+
+                if (!data.movies || data.movies.length === 0) {
+                    statsModalBody.innerHTML = '<div class="modal-loading">No movies found</div>';
+                    return;
+                }
+
+                statsModalBody.innerHTML = data.movies.map(m => `
+                    <div class="modal-movie">
+                        <img class="modal-movie-poster" src="${m.poster_full_url || ''}" alt="${m.movie_title}" onerror="this.style.display='none'">
+                        <div class="modal-movie-info">
+                            <div class="modal-movie-title">${m.movie_title}</div>
+                            <div class="modal-movie-detail">${m.user_rating != null ? m.user_rating + '/10' : 'Unrated'}${m.watched_date ? ' &middot; ' + m.watched_date : ''}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                statsModalBody.innerHTML = '<div class="modal-loading">Failed to load movies</div>';
+            }
+        });
+
+        // Actor scope toggles
+        document.querySelectorAll('.actor-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentActorScope = currentActorScope === 'main' ? 'all' : 'main';
+                // Update all toggle buttons
+                document.querySelectorAll('.actor-toggle').forEach(b => {
+                    b.textContent = currentActorScope === 'main' ? 'Main 5' : 'All Actors';
+                    b.dataset.scope = currentActorScope;
+                });
+                loadStats(currentActorScope);
+            });
+        });
+    </script>
+</body>
+</html>

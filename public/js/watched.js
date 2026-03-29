@@ -123,6 +123,10 @@ function displayMovies(movies) {
         // Use entryNumber assigned during load - stays consistent regardless of sort order
         const entryNumber = String(movie.entryNumber).padStart(3, '0');
 
+        const theaterIcon = movie.in_theater === 1
+            ? '/TrueReview_logo/noBG/Poster_color-removebg-preview.png'
+            : '/TrueReview_logo/noBG/Poster_BW-removebg-preview.png';
+
         card.innerHTML = `
             <div class="poster-wrapper">
                 <img
@@ -133,12 +137,32 @@ function displayMovies(movies) {
                 >
                 <div class="watched-entry-number">ENTRY_${entryNumber}</div>
                 <div class="hover-overlay">
-                    ${movie.in_theater === 1 ? '<div class="theater-badge">In Theaters</div>' : ''}
+                    <img class="theater-icon" src="${theaterIcon}" data-watched-id="${movie.watched_id}" alt="Theater toggle">
                     <div class="rating-display">${movie.user_rating}</div>
                     <div class="rating-label">RATING</div>
                 </div>
             </div>
         `;
+
+        // Theater toggle click handler
+        const iconEl = card.querySelector('.theater-icon');
+        iconEl.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            try {
+                const res = await fetch(`/api/toggle-theater/${movie.watched_id}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    movie.in_theater = data.in_theater;
+                    iconEl.src = data.in_theater === 1
+                        ? '/TrueReview_logo/noBG/Poster_color-removebg-preview.png'
+                        : '/TrueReview_logo/noBG/Poster_BW-removebg-preview.png';
+                }
+            } catch (err) {
+                console.error('Failed to toggle theater:', err);
+            }
+        });
 
         grid.appendChild(card);
     });

@@ -568,6 +568,10 @@ app.get("/watchlist", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "views/watchlist.html"));
 });
 
+app.get("/stats", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "views/stats.html"));
+});
+
 app.get("/edit-profile", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "views/edit_profile.html"));
 });
@@ -862,6 +866,207 @@ app.get("/api/dashboard", requireLogin, async (req, res) => {
     last,
     popcorn_kernels_delta: kernelsDelta,
   });
+});
+
+// ============================================================================
+// API — STATS PAGE
+// ============================================================================
+app.get("/api/stats", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const actorScope = req.query.actor_scope === 'all' ? 15 : 5;
+
+  try {
+    // Most watched actors (top 5, scope-aware)
+    const mostWatchedActorsQ = `
+      SELECT actor, COUNT(*) AS count
+      FROM (
+        SELECT TRIM(a.actor) AS actor
+        FROM watched_list wl,
+        LATERAL unnest(
+          (string_to_array(wl.actors, ','))[1:${actorScope}]
+        ) AS a(actor)
+        WHERE wl.user_id = $1 AND wl.actors IS NOT NULL AND wl.actors != ''
+      ) sub
+      GROUP BY actor ORDER BY count DESC, actor ASC LIMIT 5
+    `;
+
+    // Most watched directors (top 5)
+    const mostWatchedDirectorsQ = `
+      SELECT director, COUNT(*) AS count
+      FROM (
+        SELECT TRIM(unnest(string_to_array(director, ','))) AS director
+        FROM watched_list
+        WHERE user_id = $1 AND director IS NOT NULL AND director != ''
+      ) sub
+      GROUP BY director ORDER BY count DESC, director ASC LIMIT 5
+    `;
+
+    // Most watched genres (top 5)
+    const mostWatchedGenresQ = `
+      SELECT genre, COUNT(*) AS count
+      FROM (
+        SELECT TRIM(unnest(string_to_array(genre, ','))) AS genre
+        FROM watched_list
+        WHERE user_id = $1 AND genre IS NOT NULL AND genre != ''
+      ) sub
+      GROUP BY genre ORDER BY count DESC, genre ASC LIMIT 5
+    `;
+
+    // Highest rated actors (top 5, avg rating, min 3 movies, scope-aware)
+    const highestRatedActorsQ = `
+      SELECT actor, ROUND(AVG(user_rating)::numeric, 2) AS avg_rating, COUNT(*) AS count
+      FROM (
+        SELECT TRIM(a.actor) AS actor, wl.user_rating
+        FROM watched_list wl,
+        LATERAL unnest(
+          (string_to_array(actors, ','))[1:${actorScope}]
+        ) AS a(actor)
+        WHERE wl.user_id = $1 AND wl.actors IS NOT NULL AND wl.actors != '' AND wl.user_rating IS NOT NULL
+      ) sub
+      GROUP BY actor HAVING COUNT(*) >= 3
+      ORDER BY avg_rating DESC, count DESC, actor ASC LIMIT 5
+    `;
+
+    // Highest rated directors (top 5, avg rating, min 3 movies)
+    const highestRatedDirectorsQ = `
+      SELECT director, ROUND(AVG(user_rating)::numeric, 2) AS avg_rating, COUNT(*) AS count
+      FROM (
+        SELECT TRIM(unnest(string_to_array(director, ','))) AS director, user_rating
+        FROM watched_list
+        WHERE user_id = $1 AND director IS NOT NULL AND director != '' AND user_rating IS NOT NULL
+      ) sub
+      GROUP BY director HAVING COUNT(*) >= 3
+      ORDER BY avg_rating DESC, count DESC, director ASC LIMIT 5
+    `;
+
+    // Highest rated genres (top 5, avg rating, min 3 movies)
+    const highestRatedGenresQ = `
+      SELECT genre, ROUND(AVG(user_rating)::numeric, 2) AS avg_rating, COUNT(*) AS count
+      FROM (
+        SELECT TRIM(unnest(string_to_array(genre, ','))) AS genre, user_rating
+        FROM watched_list
+        WHERE user_id = $1 AND genre IS NOT NULL AND genre != '' AND user_rating IS NOT NULL
+      ) sub
+      GROUP BY genre HAVING COUNT(*) >= 3
+      ORDER BY avg_rating DESC, count DESC, genre ASC LIMIT 5
+    `;
+
+    // Theater stats: avg rating for movies seen in theaters
+    const theaterAvgQ = `
+      SELECT ROUND(AVG(user_rating)::numeric, 2) AS avg_rating, COUNT(*) AS count
+      FROM watched_list
+      WHERE user_id = $1 AND in_theater = 1 AND user_rating IS NOT NULL
+    `;
+
+    // Total minutes in theater
+    const theaterMinutesQ = `
+      SELECT COALESCE(SUM(runtime), 0) AS total_minutes
+      FROM watched_list
+      WHERE user_id = $1 AND in_theater = 1 AND runtime IS NOT NULL
+    `;
+
+    // Most watched genre in theaters (top 5)
+    const theaterGenresQ = `
+      SELECT genre, COUNT(*) AS count
+      FROM (
+        SELECT TRIM(unnest(string_to_array(genre, ','))) AS genre
+        FROM watched_list
+        WHERE user_id = $1 AND in_theater = 1 AND genre IS NOT NULL AND genre != ''
+      ) sub
+      GROUP BY genre ORDER BY count DESC, genre ASC LIMIT 5
+    `;
+
+    const [
+      mostWatchedActors,
+      mostWatchedDirectors,
+      mostWatchedGenres,
+      highestRatedActors,
+      highestRatedDirectors,
+      highestRatedGenres,
+      theaterAvg,
+      theaterMinutes,
+      theaterGenres
+    ] = await Promise.all([
+      db.query(mostWatchedActorsQ, [user_id]),
+      db.query(mostWatchedDirectorsQ, [user_id]),
+      db.query(mostWatchedGenresQ, [user_id]),
+      db.query(highestRatedActorsQ, [user_id]),
+      db.query(highestRatedDirectorsQ, [user_id]),
+      db.query(highestRatedGenresQ, [user_id]),
+      db.query(theaterAvgQ, [user_id]),
+      db.query(theaterMinutesQ, [user_id]),
+      db.query(theaterGenresQ, [user_id])
+    ]);
+
+    res.json({
+      most_watched_actors: mostWatchedActors.rows,
+      most_watched_directors: mostWatchedDirectors.rows,
+      most_watched_genres: mostWatchedGenres.rows,
+      highest_rated_actors: highestRatedActors.rows,
+      highest_rated_directors: highestRatedDirectors.rows,
+      highest_rated_genres: highestRatedGenres.rows,
+      theater_avg_rating: theaterAvg.rows[0]?.avg_rating || null,
+      theater_count: theaterAvg.rows[0]?.count || 0,
+      theater_total_minutes: parseInt(theaterMinutes.rows[0]?.total_minutes) || 0,
+      theater_top_genres: theaterGenres.rows
+    });
+  } catch (err) {
+    console.error("[STATS] Error:", err.message);
+    res.status(500).json({ error: "Failed to load stats" });
+  }
+});
+
+// ============================================================================
+// API — STATS MOVIES DRILL-DOWN
+// ============================================================================
+app.get("/api/stats/movies", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { type, name } = req.query;
+
+  if (!type || !name) return res.status(400).json({ error: "Missing type or name" });
+
+  let query;
+  if (type === 'actor') {
+    query = `
+      SELECT wl.watched_id, am.movie_title, am.poster_full_url, wl.user_rating, wl.watched_date
+      FROM watched_list wl
+      JOIN all_movies am ON wl.movie_id = am.movie_id
+      WHERE wl.user_id = $1
+        AND wl.actors IS NOT NULL
+        AND $2 = ANY(SELECT TRIM(unnest(string_to_array(wl.actors, ','))))
+      ORDER BY wl.user_rating DESC NULLS LAST, am.movie_title ASC
+    `;
+  } else if (type === 'director') {
+    query = `
+      SELECT wl.watched_id, am.movie_title, am.poster_full_url, wl.user_rating, wl.watched_date
+      FROM watched_list wl
+      JOIN all_movies am ON wl.movie_id = am.movie_id
+      WHERE wl.user_id = $1
+        AND wl.director IS NOT NULL
+        AND $2 = ANY(SELECT TRIM(unnest(string_to_array(wl.director, ','))))
+      ORDER BY wl.user_rating DESC NULLS LAST, am.movie_title ASC
+    `;
+  } else if (type === 'genre') {
+    query = `
+      SELECT wl.watched_id, am.movie_title, am.poster_full_url, wl.user_rating, wl.watched_date
+      FROM watched_list wl
+      JOIN all_movies am ON wl.movie_id = am.movie_id
+      WHERE wl.user_id = $1
+        AND wl.genre IS NOT NULL
+        AND $2 = ANY(SELECT TRIM(unnest(string_to_array(wl.genre, ','))))
+      ORDER BY wl.user_rating DESC NULLS LAST, am.movie_title ASC
+    `;
+  } else {
+    return res.status(400).json({ error: "Invalid type" });
+  }
+
+  try {
+    const result = await db.query(query, [user_id, name]);
+    res.json({ movies: result.rows });
+  } catch (err) {
+    console.error("[STATS MOVIES] Error:", err.message);
+    res.status(500).json({ error: "Failed to load movies" });
+  }
 });
 
 // ============================================================================
@@ -1842,6 +2047,28 @@ app.post("/api/update-movie/:watched_id", requireLogin, async (req, res) => {
 });
 
 // API: Delete watched entry (returns JSON)
+app.post("/api/toggle-theater/:watched_id", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const watched_id = req.params.watched_id;
+
+  try {
+    const result = await db.query(
+      `UPDATE watched_list SET in_theater = CASE WHEN in_theater = 1 THEN 0 ELSE 1 END
+       WHERE watched_id = $1 AND user_id = $2 RETURNING in_theater`,
+      [watched_id, user_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Entry not found" });
+    }
+
+    res.json({ success: true, in_theater: result.rows[0].in_theater });
+  } catch (err) {
+    console.error("Error toggling theater:", err);
+    res.status(500).json({ error: "Failed to toggle theater status" });
+  }
+});
+
 app.post("/api/delete-movie/:watched_id", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
   const watched_id = req.params.watched_id;
