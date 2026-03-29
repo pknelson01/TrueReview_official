@@ -7,6 +7,7 @@
     <link rel="icon" href="../TrueReview_logo/Icon_BW.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/public/css/user_profile.css">
+    <link rel="stylesheet" href="/public/css/movie_modal.css">
 </head>
 <body>
     <div class="grid-overlay"></div>
@@ -306,7 +307,7 @@
                                 <div class="watched-year">${m.releaseYear || ''}</div>
                             </div>`;
                         card.style.cursor = 'pointer';
-                        card.addEventListener('click', () => { window.location.href = `/update-movie/${m.watched_id}`; });
+                        card.addEventListener('click', () => { openUpdateModal(m.watched_id); });
                     } else if (iWatched) {
                         // Dimmed card matching search page "watched" style
                         const myRating = parseFloat(myEntry.user_rating).toFixed(1);
@@ -335,6 +336,8 @@
                                 <div class="watched-movie-title">${m.movie_title}</div>
                                 <div class="watched-year">${m.releaseYear || ''}</div>
                             </div>`;
+                        card.style.cursor = 'pointer';
+                        card.addEventListener('click', () => { openUpdateModal(myEntry.watched_id); });
                     } else {
                         // Normal card with watchlist button
                         const wlBtnClass = inMyWatchlist ? 'profile-watchlist-btn in-watchlist' : 'profile-watchlist-btn';
@@ -355,7 +358,7 @@
                         card.style.cursor = 'pointer';
                         card.addEventListener('click', (e) => {
                             if (e.target.closest('.profile-watchlist-btn')) return;
-                            window.location.href = `/rate-movie/${m.movie_id}`;
+                            openRateModal(m.movie_id);
                         });
                     }
 
@@ -474,6 +477,15 @@
 
         loadProfile().then(() => loadWatchedList());
         updateDashboardTab();
+    </script>
+    <script src="/public/js/movie_modal.js"></script>
+    <script>
+        window.onMovieModalClose = () => {
+            const scrollY = window.scrollY;
+            loadWatchedList().then(() => {
+                window.scrollTo(0, scrollY);
+            });
+        };
     </script>
     <script src="/public/js/admin-button.js"></script>
 </body>

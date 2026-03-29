@@ -3,14 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrueReview - Your Watched Movies</title>
+    <title>TrueReview - Add Movie</title>
     <link rel="icon" href="../TrueReview_logo/Icon_BW.png" type="image/png">
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/public/css/watched.css">
-    <link rel="stylesheet" href="/public/css/movie_modal.css">
+    <link rel="stylesheet" href="/public/css/add_movies.css">
 </head>
 <body>
     <div class="grid-overlay"></div>
+
+    <!-- Custom Confirmation Modal -->
+    <div class="modal-overlay" id="confirm-modal">
+        <div class="modal-box">
+            <div class="modal-title">Confirm Action</div>
+            <div class="modal-message">
+                Are you sure? This will delete your entry and review.
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-yes" id="modal-yes">Yes, I'm Sure</button>
+                <button class="modal-btn modal-btn-no" id="modal-no">Cancel</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Mobile Header -->
     <div class="mobile-header">
@@ -54,77 +67,52 @@
 
         <div class="tab-bar">
             <span class="tab">STATS (coming soon...)</span>
-            <a href="/watched" class="tab active">WATCHED</a>
+            <a href="/watched" class="tab">WATCHED</a>
             <a href="/watchlist" class="tab">WATCHLIST</a>
             <span class="tab">GOALS (coming soon...)</span>
             <a href="/dashboard" class="tab" id="dashboard-tab"></a>
         </div>
     </div>
 
-    <div class="container" style="padding: 25px;">
-        <div class="watched-container">
-            <div class="watched-header">
-                <h1 class="watched-title">Watched List</h1>
-                <div class="total-entries" id="total-entries">TOTAL ENTRIES: 0</div>
-                <div class="filter-section">
-                    <button class="filter-btn" id="filter-btn">FILTER</button>
-                    <div class="filter-dropdown" id="filter-dropdown">
-                        <div class="filter-option active" data-filter="activity-desc">MY ACTIVITY (LAST→FIRST)</div>
-                        <div class="filter-option" data-filter="activity-asc">MY ACTIVITY (FIRST→LAST)</div>
-                        <div class="filter-option has-submenu">
-                            RATING (0-10)
-                            <div class="filter-submenu">
-                                <div class="filter-option" data-filter="rating-10">10/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-9">9/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-8">8/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-7">7/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-6">6/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-5">5/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-4">4/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-3">3/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-2">2/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-1">1/10 ONLY</div>
-                                <div class="filter-option" data-filter="rating-0">0/10 ONLY</div>
-                            </div>
-                        </div>
-                        <div class="filter-option" data-filter="year-desc">YEAR (NEWEST→OLDEST)</div>
-                        <div class="filter-option" data-filter="year-asc">YEAR (OLDEST→NEWEST)</div>
-                        <div class="filter-option" data-filter="alpha-asc">ALPHABETICAL (A→Z)</div>
-                        <div class="filter-option" data-filter="alpha-desc">ALPHABETICAL (Z→A)</div>
-                        <div class="filter-option" data-filter="theater-yes">IN THEATERS</div>
-                        <div class="filter-option" data-filter="theater-no">NOT IN THEATERS</div>
-                    </div>
-                </div>
-            </div>
+    <div class="add-movie-container">
+        <h1 class="page-title">Add a Movie</h1>
 
-            <div class="watched-body">
-                <div id="movies-grid" class="movies-grid"></div>
-
-                <p id="empty-message" class="empty-text" style="display:none;">
-                    You haven't watched any movies yet!
-                </p>
-            </div>
+        <div class="search-type-tabs">
+            <button class="search-tab-btn active" data-search-type="movies">Movies</button>
+            <button class="search-tab-btn" data-search-type="users">Users</button>
+            <button class="search-tab-btn disabled" data-search-type="cast">Cast & Crew (coming soon...)</button>
         </div>
+
+        <div class="search-form">
+            <input
+                id="search-input"
+                type="text"
+                placeholder="Search for a movie..."
+                autocomplete="off"
+                autofocus
+            />
+        </div>
+
+        <p id="loading-text" class="loading-text" style="display:none;">Searching...</p>
+        <p id="error-text" class="error-text" style="display:none;">Error searching movies.</p>
+
+        <div id="search-results" class="results-list"></div>
     </div>
 
-    <script src="/public/js/watched.js"></script>
+    <script src="/public/js/add_movies.js"></script>
     <script>
         // Update dashboard tab with display_name
         async function updateDashboardTab() {
             try {
                 const res = await fetch("/api/user/username");
                 const data = await res.json();
-                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
+                const displayName = data.display_name || data.username;
+                document.getElementById("dashboard-tab").textContent = displayName.toUpperCase();
             } catch (err) {
                 console.error("Error loading display name:", err);
             }
         }
         updateDashboardTab();
-
-        // Clear sessionStorage on logout
-        document.querySelector('form[action="/logout"]').addEventListener('submit', () => {
-            sessionStorage.clear();
-        });
     </script>
     <script>
         // Hamburger menu toggle
@@ -153,15 +141,6 @@
             } catch (err) {}
         }
         updateMobileDashboardTab();
-    </script>
-    <script src="/public/js/movie_modal.js"></script>
-    <script>
-        window.onMovieModalClose = () => {
-            const scrollY = window.scrollY;
-            loadWatched().then(() => {
-                window.scrollTo(0, scrollY);
-            }).catch(() => {});
-        };
     </script>
     <script src="/public/js/admin-button.js"></script>
 </body>

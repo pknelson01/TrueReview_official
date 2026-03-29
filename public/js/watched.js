@@ -113,8 +113,12 @@ function displayMovies(movies) {
 
     movies.forEach((movie) => {
         const card = document.createElement("a");
-        card.href = `/update-movie/${movie.watched_id}`;
+        card.href = "#";
         card.className = "movie-card";
+        card.addEventListener("click", (e) => {
+            e.preventDefault();
+            openUpdateModal(movie.watched_id);
+        });
 
         // Use entryNumber assigned during load - stays consistent regardless of sort order
         const entryNumber = String(movie.entryNumber).padStart(3, '0');

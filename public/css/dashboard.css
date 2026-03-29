@@ -661,9 +661,19 @@
             }
         }
 
-        .movie-display:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+        @media (hover: hover) {
+            .movie-display:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+            }
+
+            .movie-display:hover .movie-poster {
+                opacity: 0.75;
+            }
+
+            .movie-display:hover .movie-info {
+                opacity: 1;
+            }
         }
 
         .movie-poster img {
@@ -671,10 +681,6 @@
             height: 100%;
             object-fit: cover;
             opacity: 1;
-        }
-
-        .movie-display:hover .movie-poster {
-            opacity: 0.75;
         }
 
         .movie-info {
@@ -690,10 +696,6 @@
             justify-content: center;
             opacity: 0;
             transition: opacity 0.3s ease;
-        }
-
-        .movie-display:hover .movie-info {
-            opacity: 1;
         }
 
         .theater-badge {

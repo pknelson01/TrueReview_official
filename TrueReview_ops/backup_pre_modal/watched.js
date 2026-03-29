@@ -1,61 +1,66 @@
-console.log("Watchlist page loaded.");
+console.log("Watched page loaded.");
 
 let allMovies = [];
-let currentFilter = sessionStorage.getItem('watchlistFilter') || 'priority-desc';
+let currentFilter = sessionStorage.getItem('watchedFilter') || 'activity-desc';
 
-async function loadWatchlist() {
+async function loadWatched() {
     try {
-        const res = await fetch("/api/watchlist");
+        const res = await fetch("/api/watched");
         allMovies = await res.json();
 
-        console.log("Watchlist movies data:", allMovies);
+        console.log("Watched movies data:", allMovies);
 
-        // Assign entry numbers based on watch_list_id order (most recent = highest number)
-        // Sort by watch_list_id to get chronological order
-        const sortedByWatchlistId = [...allMovies].sort((a, b) => a.watch_list_id - b.watch_list_id);
+        // Assign entry numbers based on watched_id order (most recent = highest number)
+        // Sort by watched_id to get chronological order
+        const sortedByWatchedId = [...allMovies].sort((a, b) => a.watched_id - b.watched_id);
 
         // Assign entry numbers starting from 1 for oldest
-        sortedByWatchlistId.forEach((movie, index) => {
+        sortedByWatchedId.forEach((movie, index) => {
             movie.entryNumber = index + 1;
         });
 
         // Apply saved filter or default
         applyFilter(currentFilter);
     } catch (err) {
-        console.error("Error loading watchlist movies:", err);
+        console.error("Error loading watched movies:", err);
     }
 }
 
 function applyFilter(filterType) {
     currentFilter = filterType;
     // Save filter to sessionStorage
-    sessionStorage.setItem('watchlistFilter', filterType);
+    sessionStorage.setItem('watchedFilter', filterType);
 
     let filteredMovies = [...allMovies];
 
-    // Apply priority filter
-    if (filterType === 'priority-high') {
-        filteredMovies = filteredMovies.filter(movie => movie.priority_01 === 1);
+    // Apply rating filters (ranges: 0/10 = 0.0-0.9, 1/10 = 1.0-1.9, 2/10 = 2.0-2.9, etc.)
+    if (filterType.startsWith('rating-')) {
+        const ratingBase = parseInt(filterType.split('-')[1]);
+        filteredMovies = filteredMovies.filter(movie => {
+            const userRating = parseFloat(movie.user_rating);
+            // For rating 10, match exactly 10.0
+            if (ratingBase === 10) {
+                return userRating === 10.0;
+            }
+            // For others, match range (e.g., 0/10 matches 0.0 to 0.9, 9/10 matches 9.0 to 9.9)
+            return userRating >= ratingBase && userRating < (ratingBase + 1);
+        });
+    }
+
+    // Apply theater filters
+    if (filterType === 'theater-yes') {
+        filteredMovies = filteredMovies.filter(movie => movie.in_theater === 1);
+    } else if (filterType === 'theater-no') {
+        filteredMovies = filteredMovies.filter(movie => movie.in_theater !== 1);
     }
 
     // Apply sorting
     switch(filterType) {
         case 'activity-desc':
-            // Default order - sort by added_date DESC (most recent first)
-            filteredMovies.sort((a, b) => new Date(b.added_date) - new Date(a.added_date));
+            // Default order - already sorted by watched_id DESC from API
             break;
         case 'activity-asc':
-            filteredMovies.sort((a, b) => new Date(a.added_date) - new Date(b.added_date));
-            break;
-        case 'priority-desc':
-            // High priority (1) first, then normal (0)
-            filteredMovies.sort((a, b) => {
-                if (b.priority_01 !== a.priority_01) {
-                    return b.priority_01 - a.priority_01;
-                }
-                // If same priority, sort by added date (newest first)
-                return new Date(b.added_date) - new Date(a.added_date);
-            });
+            filteredMovies.sort((a, b) => a.watched_id - b.watched_id);
             break;
         case 'year-desc':
             filteredMovies.sort((a, b) => {
@@ -108,83 +113,30 @@ function displayMovies(movies) {
 
     movies.forEach((movie) => {
         const card = document.createElement("a");
+        card.href = `/update-movie/${movie.watched_id}`;
         card.className = "movie-card";
-        card.href = "#";
-        card.addEventListener("click", (e) => {
-            if (e.target.closest('.priority-btn')) return;
-            e.preventDefault();
-            openRateModal(movie.movie_id);
-        });
 
         // Use entryNumber assigned during load - stays consistent regardless of sort order
         const entryNumber = String(movie.entryNumber).padStart(3, '0');
 
-        // Priority badge HTML (only show if priority_01 === 1)
-        const priorityBadgeHTML = movie.priority_01 === 1
-            ? '<div class="priority-badge">HIGH PRIORITY</div>'
-            : '';
-
-        // Priority button classes based on current priority
-        const priorityBtnClass = movie.priority_01 === 1 ? 'priority-btn active' : 'priority-btn';
-
         card.innerHTML = `
             <div class="poster-wrapper">
-                ${priorityBadgeHTML}
-                <button class="${priorityBtnClass}" data-movie-id="${movie.movie_id}" data-watch-list-id="${movie.watch_list_id}" data-priority="${movie.priority_01}">
-                    <span class="priority-icon">★</span>
-                </button>
                 <img
                     src="${movie.poster_full_url}"
                     alt="${movie.movie_title}"
                     class="movie-poster"
                     onerror="this.src='/TrueReview_logo/Poster_BW.png'"
                 >
-                <div class="watchlist-entry-number">ENTRY_${entryNumber}</div>
+                <div class="watched-entry-number">ENTRY_${entryNumber}</div>
                 <div class="hover-overlay">
-                    <div class="movie-title">${movie.movie_title}</div>
+                    ${movie.in_theater === 1 ? '<div class="theater-badge">In Theaters</div>' : ''}
+                    <div class="rating-display">${movie.user_rating}</div>
+                    <div class="rating-label">RATING</div>
                 </div>
             </div>
         `;
 
         grid.appendChild(card);
-    });
-
-    // Add event listeners to priority buttons
-    document.querySelectorAll('.priority-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const watchListId = btn.dataset.watchListId;
-            const currentPriority = parseInt(btn.dataset.priority);
-            const newPriority = currentPriority === 1 ? 0 : 1;
-
-            try {
-                const res = await fetch(`/api/watchlist/${watchListId}/priority`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ priority_01: newPriority })
-                });
-
-                if (!res.ok) {
-                    console.error('Failed to update priority');
-                    return;
-                }
-
-                // Update button state
-                btn.dataset.priority = newPriority;
-                if (newPriority === 1) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-
-                // Reload to update the priority badge
-                loadWatchlist();
-            } catch (err) {
-                console.error('Error updating priority:', err);
-            }
-        });
     });
 }
 
@@ -195,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterOptions = document.querySelectorAll('.filter-option');
 
     // Set active class on the currently selected filter
-    const savedFilter = sessionStorage.getItem('watchlistFilter') || 'activity-desc';
+    const savedFilter = sessionStorage.getItem('watchedFilter') || 'activity-desc';
     filterOptions.forEach(opt => {
         if (opt.getAttribute('data-filter') === savedFilter) {
             opt.classList.add('active');
@@ -234,9 +186,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Close dropdown
                 filterDropdown.classList.remove('active');
             }
+            // If no data-filter (parent menu item), don't do anything - just show submenu
         });
     });
 });
 
 // Load immediately
-loadWatchlist();
+loadWatched();

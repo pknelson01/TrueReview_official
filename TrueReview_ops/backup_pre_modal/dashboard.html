@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="/public/css/dashboard.css">
-    <link rel="stylesheet" href="/public/css/movie_modal.css">
 </head>
 <body>
     <div class="grid-overlay"></div>
@@ -398,7 +397,7 @@
                         </div>
                     `;
                     lastCard.style.cursor = "pointer";
-                    lastCard.onclick = () => openUpdateModal(data.last.watched_id);
+                    lastCard.onclick = () => window.location.href = `/update-movie/${data.last.watched_id}`;
                 }
 
                 // Favorite Movie (if available)
@@ -417,7 +416,7 @@
                     `;
                     if (data.favorite.watched_id) {
                         favCard.style.cursor = "pointer";
-                        favCard.onclick = () => openUpdateModal(data.favorite.watched_id);
+                        favCard.onclick = () => window.location.href = `/update-movie/${data.favorite.watched_id}`;
                     }
                 }
 
@@ -746,10 +745,6 @@
         updateMobileDashboardTab();
     </script>
 
-    <script src="/public/js/movie_modal.js"></script>
-    <script>
-        window.onMovieModalClose = () => { showAnimations = true; loadDashboard(); };
-    </script>
     <script src="/public/js/admin-button.js"></script>
 </body>
 </html>

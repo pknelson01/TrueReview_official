@@ -368,9 +368,23 @@
             text-decoration: none;
         }
 
-        .movie-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+        @media (hover: hover) {
+            .movie-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+            }
+
+            .movie-card:hover .movie-poster {
+                opacity: 0.75;
+            }
+
+            .movie-card:hover .hover-overlay {
+                opacity: 1;
+            }
+
+            .movie-card:hover .watched-entry-number {
+                opacity: 1;
+            }
         }
 
         .poster-wrapper {
@@ -389,10 +403,6 @@
             background-position: center;
         }
 
-        .movie-card:hover .movie-poster {
-            opacity: 0.75;
-        }
-
         .hover-overlay {
             position: absolute;
             top: 0;
@@ -406,10 +416,6 @@
             justify-content: center;
             opacity: 0;
             transition: opacity 0.3s ease;
-        }
-
-        .movie-card:hover .hover-overlay {
-            opacity: 1;
         }
 
         .theater-badge {
@@ -469,10 +475,6 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             z-index: 10;
-        }
-
-        .movie-card:hover .watched-entry-number {
-            opacity: 1;
         }
 
         .empty-text, .empty-msg {

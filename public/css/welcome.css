@@ -141,7 +141,7 @@
         /* RESPONSIVE — iPhone */
         @media (max-width: 480px) {
             .welcome-wrapper {
-                padding: 40px 24px;
+                padding: 40px 24px 50px;
                 margin: 0 12px;
                 border-width: 3px;
             }
@@ -153,6 +153,14 @@
             .loading-text {
                 font-size: 13px;
                 letter-spacing: 2px;
+                margin-bottom: 20px;
+            }
+            .coordinates {
+                position: relative;
+                bottom: auto;
+                left: auto;
+                transform: none;
+                margin-top: 10px;
             }
         }
     

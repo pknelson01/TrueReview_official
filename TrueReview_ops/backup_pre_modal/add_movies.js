@@ -59,12 +59,14 @@ function renderMovieResults(movies) {
     movies.forEach(movie => {
         const card = document.createElement("a");
         card.className = movie.isWatched ? "movie-card watched" : "movie-card";
-        card.href = "#";
 
         if (movie.isWatched && movie.watched_id) {
-            card.addEventListener("click", (e) => { e.preventDefault(); openUpdateModal(movie.watched_id); });
+            card.href = `/update-movie/${movie.watched_id}`;
+        } else if (movie.isWatched && !movie.watched_id) {
+            console.warn("Movie marked as watched but missing watched_id:", movie);
+            card.href = `/rate-movie/${movie.movie_id}`;
         } else {
-            card.addEventListener("click", (e) => { e.preventDefault(); openRateModal(movie.movie_id); });
+            card.href = `/rate-movie/${movie.movie_id}`;
         }
 
         const watchlistBtnClass = movie.inWatchlist ? "watchlist-btn in-watchlist" : "watchlist-btn";

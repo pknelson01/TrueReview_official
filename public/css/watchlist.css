@@ -347,9 +347,39 @@
             text-decoration: none;
         }
 
-        .movie-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+        @media (hover: hover) {
+            .movie-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 30px rgba(255, 255, 255, 0.4);
+            }
+
+            .movie-card:hover .movie-poster {
+                opacity: 0.75;
+            }
+
+            .movie-card:hover .hover-overlay {
+                opacity: 1;
+            }
+
+            .movie-card:hover .priority-btn {
+                opacity: 1;
+            }
+
+            .movie-card:hover .watchlist-entry-number {
+                opacity: 1;
+            }
+
+            .priority-btn:hover {
+                background: var(--steel);
+                color: var(--charcoal);
+                border-color: var(--white);
+                transform: scale(1.1);
+            }
+
+            .priority-btn.active:hover {
+                background: #a01828;
+                border-color: #a01828;
+            }
         }
 
         .poster-wrapper {
@@ -366,10 +396,6 @@
             background: url('/TrueReview_logo/Poster_BW.png');
             background-size: cover;
             background-position: center;
-        }
-
-        .movie-card:hover .movie-poster {
-            opacity: 0.75;
         }
 
         .priority-badge {
@@ -410,26 +436,10 @@
             font-size: 20px;
         }
 
-        .priority-btn:hover {
-            background: var(--steel);
-            color: var(--charcoal);
-            border-color: var(--white);
-            transform: scale(1.1);
-        }
-
         .priority-btn.active {
             background: var(--priority-red);
             border-color: var(--priority-red);
             color: var(--white);
-        }
-
-        .priority-btn.active:hover {
-            background: #a01828;
-            border-color: #a01828;
-        }
-
-        .movie-card:hover .priority-btn {
-            opacity: 1;
         }
 
         .hover-overlay {
@@ -445,10 +455,6 @@
             justify-content: center;
             opacity: 0;
             transition: opacity 0.3s ease;
-        }
-
-        .movie-card:hover .hover-overlay {
-            opacity: 1;
         }
 
         .movie-title {
@@ -474,9 +480,6 @@
             z-index: 10;
         }
 
-        .movie-card:hover .watchlist-entry-number {
-            opacity: 1;
-        }
 
         .empty-text, .empty-msg {
             text-align: center;
