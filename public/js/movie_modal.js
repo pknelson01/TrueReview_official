@@ -163,6 +163,7 @@
         dateBtn.textContent = "Date";
         dateBtn.classList.remove("active");
         theaterBtn.classList.remove("active");
+        memoryBtn.classList.remove("active");
         inTheaterValue = 0;
         currentMemory = null;
         pendingMemoryFile = null;
@@ -340,6 +341,7 @@
 
             // Memory
             currentMemory = data.memory || null;
+            if (currentMemory) memoryBtn.classList.add("active");
 
             // Use details from watched_list (already in response) — no extra API call
             if (data.director || data.genre || data.actors || data.mpa_rating || data.mpaa_rating) {
@@ -419,10 +421,16 @@
                         const formData = new FormData();
                         formData.append("file", pendingMemoryFile);
                         try {
-                            await fetch(`/api/upload/memory/${data.watched_id}`, {
+                            const memRes = await fetch(`/api/upload/memory/${data.watched_id}`, {
                                 method: "POST",
                                 body: formData
                             });
+                            const memData = await memRes.json();
+                            if (memRes.ok && memData.success) {
+                                if (typeof showToast === 'function') showToast("Image uploaded");
+                            } else {
+                                pendingMemoryFile = null;
+                            }
                         } catch (memErr) {
                             console.error("Error uploading memory:", memErr);
                         }
@@ -547,6 +555,7 @@
                     const res = await fetch(`/api/upload/memory/${currentWatchedId}`, { method: "DELETE" });
                     if (res.ok) {
                         currentMemory = null;
+                        memoryBtn.classList.remove("active");
                         memoryOverlay.classList.remove("active");
                     }
                 } catch (err) { console.error(err); }
@@ -561,6 +570,7 @@
             `;
             document.getElementById("mm-memory-delete-btn").addEventListener("click", () => {
                 pendingMemoryFile = null;
+                memoryBtn.classList.remove("active");
                 memoryOverlay.classList.remove("active");
             });
         } else {
@@ -590,10 +600,28 @@
         memoryOverlay.classList.add("active");
     });
 
-    function handleMemoryFile(file) {
+    async function handleMemoryFile(file) {
+        // Pre-check image before accepting
+        const checkForm = new FormData();
+        checkForm.append("file", file);
+        try {
+            const checkRes = await fetch("/api/check-image", { method: "POST", body: checkForm });
+            const checkData = await checkRes.json();
+            if (!checkData.safe) {
+                const dropzone = document.getElementById("mm-memory-dropzone");
+                if (dropzone) {
+                    dropzone.innerHTML = `<p style="color:#ff6b6b;">Image flagged as inappropriate. Please choose another image.</p>`;
+                }
+                return;
+            }
+        } catch (err) {
+            console.error("Image check failed:", err);
+        }
+
         if (mode === "rate") {
             // Store locally — will upload after movie is added
             pendingMemoryFile = file;
+            memoryBtn.classList.add("active");
             memoryOverlay.classList.remove("active");
         } else {
             uploadMemory(file);
@@ -609,8 +637,14 @@
                 body: formData
             });
             const data = await res.json();
-            if (data.success) {
+            if (res.ok && data.success) {
                 currentMemory = data.filename;
+                memoryBtn.classList.add("active");
+                memoryOverlay.classList.remove("active");
+                if (typeof showToast === 'function') showToast("Image uploaded");
+            } else {
+                currentMemory = null;
+                memoryBtn.classList.remove("active");
                 memoryOverlay.classList.remove("active");
             }
         } catch (err) { console.error(err); }

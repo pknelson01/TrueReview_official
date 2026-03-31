@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="/public/css/edit_profile.css">
+    <link rel="stylesheet" href="/public/css/toast.css">
 </head>
 <body>
     <div class="grid-overlay"></div>
@@ -27,7 +28,7 @@
         <a href="/watchlist">Watchlist</a>
         <a href="/add-movie">Search</a>
         <a href="/stats">Stats</a>
-        <span>Goals (coming soon...)</span>
+        <a href="/goals">Goals</a>
         <form action="/logout" method="POST" style="margin:0;">
             <button type="submit" class="mobile-logout">Logout</button>
         </form>
@@ -56,7 +57,7 @@
             <a href="/stats" class="tab">STATS</a>
             <a href="/watched" class="tab">WATCHED</a>
             <a href="/watchlist" class="tab">WATCHLIST</a>
-            <span class="tab">GOALS (coming soon...)</span>
+            <a href="/goals" class="tab">GOALS</a>
             <a href="/dashboard" class="tab" id="dashboard-tab"></a>
         </div>
     </div>
@@ -129,6 +130,28 @@
             const file = e.target.files[0];
             if (!file) return;
 
+            // Pre-check image
+            const checkForm = new FormData();
+            checkForm.append("file", file);
+            try {
+                const checkRes = await fetch("/api/check-image", { method: "POST", body: checkForm });
+                const checkData = await checkRes.json();
+                if (!checkData.safe) {
+                    const container = document.getElementById("pfp-input").closest(".profile-pic-section") || document.getElementById("pfp-input").parentElement;
+                    let errEl = document.getElementById("pfp-nsfw-error");
+                    if (!errEl) {
+                        errEl = document.createElement("div");
+                        errEl.id = "pfp-nsfw-error";
+                        errEl.style.cssText = "color:#ff6b6b;font-family:'Anonymous Pro',monospace;font-size:13px;margin-top:8px;text-align:center;";
+                        container.appendChild(errEl);
+                    }
+                    errEl.textContent = "Image flagged as inappropriate. Please choose another image.";
+                    return;
+                }
+            } catch (err) {
+                console.error("Image check failed:", err);
+            }
+
             const formData = new FormData();
             formData.append("file", file);
 
@@ -137,12 +160,15 @@
                 body: formData
             });
 
-            if (res.ok) {
-                const data = await res.json();
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast("Image uploaded");
                 const img = document.getElementById("profile-pic");
                 img.src = `/uploads/profile_pictures/${data.filename}`;
                 img.style.display = "block";
                 document.getElementById("profile-initials").style.display = "none";
+                const errEl = document.getElementById("pfp-nsfw-error");
+                if (errEl) errEl.remove();
             }
         });
 
@@ -217,6 +243,7 @@
         }
         updateMobileDashboardTab();
     </script>
+    <script src="/public/js/toast.js"></script>
     <script src="/public/js/admin-button.js"></script>
     <script src="/public/js/impersonate-banner.js"></script>
 </body>

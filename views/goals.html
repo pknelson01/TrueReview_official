@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueReview - Goals</title>
+    <link rel="icon" href="../TrueReview_logo/Icon_BW.png" type="image/png">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="/public/css/goals.css">
+    <link rel="stylesheet" href="/public/css/movie_modal.css">
+    <link rel="stylesheet" href="/public/css/toast.css">
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <button class="hamburger-btn" id="hamburger-btn">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <a href="/dashboard" class="mobile-logo">TrueReview</a>
+    </div>
+    <div class="mobile-menu" id="mobile-menu">
+        <a href="/dashboard" id="mobile-dashboard-tab">Dashboard</a>
+        <a href="/watched">Watched</a>
+        <a href="/watchlist">Watchlist</a>
+        <a href="/add-movie">Search</a>
+        <a href="/stats">Stats</a>
+        <a href="/goals">Goals</a>
+        <form action="/logout" method="POST" style="margin:0;">
+            <button type="submit" class="mobile-logout">Logout</button>
+        </form>
+    </div>
+
+    <div class="header-container">
+        <div class="header-bar">
+            <div class="logo-section">
+                <a href="/dashboard" class="logo">TrueReview</a>
+            </div>
+            <div class="center-info">
+                <div class="site-title">Film Analysis Platform</div>
+                <div class="header-search">
+                    <a href="/add-movie" class="search-btn">Search</a>
+                </div>
+            </div>
+            <div class="status-section">
+                <form action="/logout" method="POST">
+                    <button class="logout-btn">Logout</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <a href="/stats" class="tab">STATS</a>
+            <a href="/watched" class="tab">WATCHED</a>
+            <a href="/watchlist" class="tab">WATCHLIST</a>
+            <a href="/goals" class="tab active">GOALS</a>
+            <a href="/dashboard" class="tab" id="dashboard-tab"></a>
+        </div>
+    </div>
+
+    <!-- Goal Detail Modal -->
+    <div class="modal-overlay" id="goal-detail-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title" id="goal-modal-title"></div>
+                <div class="modal-header-actions">
+                    <button class="goal-image-btn" id="goal-image-btn" style="display:none;" title="Upload goal image"><i class="fas fa-camera"></i></button>
+                    <button class="modal-close" id="goal-modal-close">&times;</button>
+                </div>
+            </div>
+            <!-- Goal Image Upload Overlay -->
+            <div class="goal-image-overlay" id="goal-image-overlay">
+                <div class="goal-image-overlay-content">
+                    <div class="goal-image-overlay-title">Goal Image</div>
+                    <div id="goal-image-overlay-body"></div>
+                    <button class="goal-image-close-btn" id="goal-image-close">Close</button>
+                </div>
+            </div>
+            <div class="modal-progress-bar">
+                <div class="modal-progress-fill" id="goal-modal-progress"></div>
+            </div>
+            <div class="modal-progress-row">
+                <div class="modal-progress-text" id="goal-modal-progress-text"></div>
+                <button class="modal-add-all-btn" id="goal-add-all-btn" style="display:none;">ADD ALL TO WATCHLIST</button>
+            </div>
+            <!-- Custom goal: add movie search -->
+            <div class="modal-custom-search" id="modal-custom-search" style="display:none;">
+                <div class="modal-search-row">
+                    <input type="text" id="modal-movie-search" class="goal-search-input" placeholder="Search for a movie to add...">
+                </div>
+                <div class="modal-search-results" id="modal-search-results"></div>
+            </div>
+            <div class="modal-body" id="goal-modal-body"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="goals-page-header">
+            <h1 class="goals-title">Your Goals</h1>
+            <button class="add-goal-btn" id="add-goal-btn"><i class="fas fa-plus"></i> ADD GOAL</button>
+        </div>
+
+        <!-- Add Goal Panel -->
+        <div class="add-goal-panel" id="add-goal-panel" style="display:none;">
+            <div class="panel-header">
+                <div class="panel-title">Create a New Goal</div>
+                <button class="panel-close" id="panel-close">&times;</button>
+            </div>
+            <div class="search-type-tabs">
+                <button class="type-tab active" data-type="actor">ACTOR</button>
+                <button class="type-tab" data-type="director">DIRECTOR</button>
+                <button class="type-tab" data-type="franchise">FRANCHISE</button>
+                <button class="type-tab" data-type="custom">CUSTOM</button>
+            </div>
+            <!-- Standard search (actor/director/franchise) -->
+            <div id="standard-search">
+                <div class="search-row">
+                    <input type="text" id="goal-search-input" class="goal-search-input" placeholder="Search for an actor...">
+                </div>
+                <div class="search-results" id="search-results"></div>
+            </div>
+            <!-- Custom goal creation -->
+            <div id="custom-search" style="display:none;">
+                <div class="search-row">
+                    <input type="text" id="custom-goal-name" class="goal-search-input" placeholder="Name your goal (e.g. Oscar Winners 2024)">
+                </div>
+                <button class="custom-create-btn" id="custom-create-btn">CREATE GOAL</button>
+            </div>
+        </div>
+
+        <!-- Goals Loading -->
+        <div class="goals-loading" id="goals-loading">Loading goals...</div>
+
+        <!-- Empty State -->
+        <div class="goals-empty" id="goals-empty" style="display:none;">
+            <div class="empty-icon"><i class="fas fa-bullseye"></i></div>
+            <div class="empty-text">No goals yet</div>
+            <div class="empty-sub">Add a goal to track your progress watching all films by an actor, director, or franchise.</div>
+        </div>
+
+        <!-- Goals Grid -->
+        <div class="goals-grid" id="goals-grid" style="display:none;"></div>
+    </div>
+
+    <script src="/public/js/toast.js"></script>
+    <script src="/public/js/movie_modal.js"></script>
+    <script src="/public/js/goals.js"></script>
+</body>
+</html>

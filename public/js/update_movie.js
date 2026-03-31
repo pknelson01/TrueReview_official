@@ -42,6 +42,9 @@ async function loadWatchedEntry() {
 
     // Store memory filename
     currentMemory = data.memory || null;
+    if (currentMemory) {
+        document.getElementById("memory-btn").classList.add("active");
+    }
 
     // Set form actions
     document.getElementById("update-form").action = `/update-movie/${watchedId}`;
@@ -132,6 +135,7 @@ memoryBtn.addEventListener("click", () => {
                 const res = await fetch(`/api/upload/memory/${watchedId}`, { method: "DELETE" });
                 if (res.ok) {
                     currentMemory = null;
+                    document.getElementById("memory-btn").classList.remove("active");
                     memoryModal.classList.remove("active");
                 }
             } catch (err) {
@@ -176,6 +180,23 @@ memoryBtn.addEventListener("click", () => {
 });
 
 async function uploadMemoryFile(file) {
+    // Pre-check image before uploading
+    const checkForm = new FormData();
+    checkForm.append("file", file);
+    try {
+        const checkRes = await fetch("/api/check-image", { method: "POST", body: checkForm });
+        const checkData = await checkRes.json();
+        if (!checkData.safe) {
+            const dropzone = document.getElementById("memory-dropzone");
+            if (dropzone) {
+                dropzone.innerHTML = `<p style="color:#ff6b6b;">Image flagged as inappropriate. Please choose another image.</p>`;
+            }
+            return;
+        }
+    } catch (err) {
+        console.error("Image check failed:", err);
+    }
+
     const formData = new FormData();
     formData.append("file", file);
 
@@ -185,8 +206,14 @@ async function uploadMemoryFile(file) {
             body: formData
         });
         const data = await res.json();
-        if (data.success) {
+        if (res.ok && data.success) {
             currentMemory = data.filename;
+            document.getElementById("memory-btn").classList.add("active");
+            memoryModal.classList.remove("active");
+            if (typeof showToast === 'function') showToast("Image uploaded");
+        } else {
+            currentMemory = null;
+            document.getElementById("memory-btn").classList.remove("active");
             memoryModal.classList.remove("active");
         }
     } catch (err) {

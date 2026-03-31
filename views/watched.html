@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Anonymous+Pro:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/public/css/watched.css">
     <link rel="stylesheet" href="/public/css/movie_modal.css">
+    <link rel="stylesheet" href="/public/css/toast.css">
 </head>
 <body>
     <div class="grid-overlay"></div>
@@ -27,7 +28,7 @@
         <a href="/watchlist">Watchlist</a>
         <a href="/add-movie">Search</a>
         <a href="/stats">Stats</a>
-        <span>Goals (coming soon...)</span>
+        <a href="/goals">Goals</a>
         <form action="/logout" method="POST" style="margin:0;">
             <button type="submit" class="mobile-logout">Logout</button>
         </form>
@@ -56,7 +57,7 @@
             <a href="/stats" class="tab">STATS</a>
             <a href="/watched" class="tab active">WATCHED</a>
             <a href="/watchlist" class="tab">WATCHLIST</a>
-            <span class="tab">GOALS (coming soon...)</span>
+            <a href="/goals" class="tab">GOALS</a>
             <a href="/dashboard" class="tab" id="dashboard-tab"></a>
         </div>
     </div>
@@ -174,6 +175,7 @@
             }).catch(() => {});
         };
     </script>
+    <script src="/public/js/toast.js"></script>
     <script src="/public/js/admin-button.js"></script>
     <script src="/public/js/impersonate-banner.js"></script>
 </body>

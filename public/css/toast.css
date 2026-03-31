@@ -1,0 +1,64 @@
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--charcoal, #2B2B2B);
+    border: 1px solid var(--steel, #A8A8A8);
+    padding: 14px 20px 18px;
+    z-index: 10000;
+    min-width: 200px;
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+}
+
+.toast-notification.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+.toast-notification.fade-out {
+    opacity: 0;
+    transform: translateX(40px);
+}
+
+.toast-text {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #FFFFFF;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.toast-progress-track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.toast-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #f5c518;
+    transition: none;
+}
+
+.toast-progress-bar.animating {
+    width: 100%;
+    transition: width 3s linear;
+}
+
+@media (max-width: 480px) {
+    .toast-notification {
+        top: 56px;
+        right: 10px;
+        left: 10px;
+        min-width: unset;
+    }
+}

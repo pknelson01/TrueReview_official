@@ -13,6 +13,8 @@ import fetch from "node-fetch";
 import { fileURLToPath } from "url";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import * as tf from "@tensorflow/tfjs-node";
+import * as nsfw from "nsfwjs";
 
 // ----------------------------------------------------
 // Path Fix (ESM)
@@ -58,6 +60,39 @@ db.query(`
     created_at TIMESTAMP DEFAULT NOW()
   )
 `).catch(err => console.error("[DB] Failed to create password_reset_tokens table:", err));
+
+db.query(`
+  CREATE TABLE IF NOT EXISTS user_goals (
+    goal_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    goal_type TEXT NOT NULL CHECK (goal_type IN ('actor', 'director', 'franchise', 'keyword')),
+    tmdb_id INTEGER NOT NULL,
+    goal_name TEXT NOT NULL,
+    profile_path TEXT,
+    poster_path TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(user_id, goal_type, tmdb_id)
+  )
+`).catch(err => console.error("[DB] Failed to create user_goals table:", err));
+
+// Migrate: expand goal_type constraint to include 'keyword' and 'custom'
+db.query(`
+  ALTER TABLE user_goals DROP CONSTRAINT IF EXISTS user_goals_goal_type_check;
+  ALTER TABLE user_goals ADD CONSTRAINT user_goals_goal_type_check CHECK (goal_type IN ('actor', 'director', 'franchise', 'keyword', 'custom'));
+`).catch(() => {});
+
+db.query(`
+  CREATE TABLE IF NOT EXISTS custom_goal_movies (
+    id SERIAL PRIMARY KEY,
+    goal_id INTEGER REFERENCES user_goals(goal_id) ON DELETE CASCADE,
+    movie_id INTEGER NOT NULL,
+    added_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE(goal_id, movie_id)
+  )
+`).catch(err => console.error("[DB] Failed to create custom_goal_movies table:", err));
+
+// Migrate: add custom_image column to user_goals
+db.query(`ALTER TABLE user_goals ADD COLUMN IF NOT EXISTS custom_image TEXT`).catch(() => {});
 
 // ----------------------------------------------------
 // Email (Nodemailer)
@@ -135,9 +170,55 @@ const memoryStorage = multer.diskStorage({
   },
 });
 
+const goalImageStorage = multer.diskStorage({
+  destination: "./uploads/goal_images",
+  filename: (req, file, cb) => {
+    cb(null, `goal_${req.params.goal_id}_${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
 const uploadProfilePic = multer({ storage: profilePicStorage });
 const uploadBackground = multer({ storage: backgroundStorage });
 const uploadMemory = multer({ storage: memoryStorage });
+const uploadGoalImage = multer({ storage: goalImageStorage });
+const uploadCheck = multer({ dest: "./uploads/temp" });
+
+// ----------------------------------------------------
+// NSFW Image Moderation
+// ----------------------------------------------------
+let nsfwModel = null;
+
+async function loadNsfwModel() {
+  try {
+    nsfwModel = await nsfw.load();
+    console.log("[NSFW] Model loaded successfully");
+  } catch (err) {
+    console.error("[NSFW] Failed to load model:", err);
+  }
+}
+loadNsfwModel();
+
+async function isImageNSFW(filePath) {
+  if (!nsfwModel) return false; // Skip check if model failed to load
+  try {
+    const imageBuffer = (await import("fs")).default.readFileSync(filePath);
+    const imageTensor = tf.node.decodeImage(imageBuffer, 3);
+    const predictions = await nsfwModel.classify(imageTensor);
+    imageTensor.dispose();
+
+    const result = {};
+    predictions.forEach(p => { result[p.className] = p.probability; });
+
+    const isUnsafe = (result.Porn || 0) > 0.3 || (result.Hentai || 0) > 0.3 || (result.Sexy || 0) > 0.5;
+    if (isUnsafe) {
+      console.log("[NSFW] Image flagged:", filePath, predictions.map(p => `${p.className}: ${(p.probability * 100).toFixed(1)}%`).join(", "));
+    }
+    return isUnsafe;
+  } catch (err) {
+    console.error("[NSFW] Classification error:", err);
+    return false; // Don't block uploads if classification fails
+  }
+}
 
 // ----------------------------------------------------
 // Auth Middleware
@@ -154,6 +235,21 @@ async function requireAdmin(req, res, next) {
   if (result.rows[0]?.admin_yn !== 1) return res.status(403).sendFile(path.join(__dirname, "views/index.html"));
   next();
 }
+
+// ----------------------------------------------------
+// NSFW Pre-check endpoint
+// ----------------------------------------------------
+app.post("/api/check-image", requireLogin, uploadCheck.single("file"), async (req, res) => {
+  const fs = (await import("fs")).default;
+  try {
+    const flagged = await isImageNSFW(req.file.path);
+    fs.unlinkSync(req.file.path);
+    res.json({ safe: !flagged });
+  } catch (err) {
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    res.json({ safe: true });
+  }
+});
 
 // ----------------------------------------------------
 // Email Validation Function
@@ -571,6 +667,10 @@ app.get("/watchlist", requireLogin, (req, res) => {
 
 app.get("/stats", requireLogin, (req, res) => {
   res.sendFile(path.join(__dirname, "views/stats.html"));
+});
+
+app.get("/goals", requireLogin, (req, res) => {
+  res.sendFile(path.join(__dirname, "views/goals.html"));
 });
 
 app.get("/edit-profile", requireLogin, (req, res) => {
@@ -1497,6 +1597,12 @@ app.post("/api/upload/profile-picture", requireLogin, uploadProfilePic.single("f
   const user_id = req.session.user_id;
   const filename = req.file.filename;
 
+  if (await isImageNSFW(req.file.path)) {
+    const fs = (await import("fs")).default;
+    fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: "Image flagged as inappropriate" });
+  }
+
   await db.query(
     `UPDATE users SET profile_picture = $1 WHERE user_id = $2`,
     [filename, user_id]
@@ -1509,6 +1615,12 @@ app.post("/api/upload/profile-picture", requireLogin, uploadProfilePic.single("f
 app.post("/api/upload/background", requireLogin, uploadBackground.single("file"), async (req, res) => {
   const user_id = req.session.user_id;
   const filename = req.file.filename;
+
+  if (await isImageNSFW(req.file.path)) {
+    const fs = (await import("fs")).default;
+    fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: "Image flagged as inappropriate" });
+  }
 
   await db.query(
     `UPDATE users SET profile_background_photo = $1 WHERE user_id = $2`,
@@ -1523,6 +1635,12 @@ app.post("/api/upload/memory/:watched_id", requireLogin, uploadMemory.single("fi
   const user_id = req.session.user_id;
   const watched_id = req.params.watched_id;
   const filename = req.file.filename;
+
+  if (await isImageNSFW(req.file.path)) {
+    const fs = (await import("fs")).default;
+    fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: "Image flagged as inappropriate" });
+  }
 
   // Verify ownership
   const check = await db.query(
@@ -2285,6 +2403,496 @@ app.post("/api/user/unfollow/:user_id", requireLogin, async (req, res) => {
   } catch (error) {
     console.error("Error unfollowing user:", error);
     res.status(500).json({ error: "Failed to unfollow user" });
+  }
+});
+
+// ============================================================================
+// API — GOALS
+// ============================================================================
+
+// Search TMDb for people (actors/directors) and collections (franchises)
+app.get("/api/goals/search", requireLogin, async (req, res) => {
+  const q = req.query.q || "";
+  const type = req.query.type || "person"; // person or franchise
+
+  if (!q.trim()) return res.json([]);
+
+  try {
+    if (type === "franchise") {
+      // Search both collections and keywords in parallel
+      const [collectionRes, keywordRes] = await Promise.all([
+        fetch(`https://api.themoviedb.org/3/search/collection?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(q)}`),
+        fetch(`https://api.themoviedb.org/3/search/keyword?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(q)}`),
+      ]);
+      const [collectionData, keywordData] = await Promise.all([collectionRes.json(), keywordRes.json()]);
+
+      const collections = (collectionData.results || []).slice(0, 10).map(c => ({
+        tmdb_id: c.id,
+        name: c.name,
+        poster_path: c.poster_path ? `https://image.tmdb.org/t/p/w200${c.poster_path}` : null,
+        source: 'collection',
+      }));
+
+      const keywords = (keywordData.results || []).slice(0, 5).map(k => ({
+        tmdb_id: k.id,
+        name: k.name + ' (all films)',
+        poster_path: null,
+        source: 'keyword',
+      }));
+
+      return res.json([...collections, ...keywords]);
+    }
+
+    // Search for people (actors or directors)
+    const tmdbUrl = `https://api.themoviedb.org/3/search/person?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(q)}`;
+    const response = await fetch(tmdbUrl);
+    const data = await response.json();
+    const results = (data.results || [])
+      .filter(p => p.known_for_department === "Acting" || p.known_for_department === "Directing")
+      .slice(0, 15)
+      .map(p => ({
+        tmdb_id: p.id,
+        name: p.name,
+        department: p.known_for_department,
+        profile_path: p.profile_path ? `https://image.tmdb.org/t/p/w200${p.profile_path}` : null,
+      }));
+    return res.json(results);
+  } catch (error) {
+    console.error("[GOALS SEARCH]", error);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
+// Get movies for a goal target (person credits or collection)
+app.get("/api/goals/movies", requireLogin, async (req, res) => {
+  const { type, tmdb_id } = req.query;
+  const user_id = req.session.user_id;
+
+  if (!type || !tmdb_id) return res.status(400).json({ error: "Missing type or tmdb_id" });
+
+  try {
+    let movies = [];
+
+    if (type === "franchise") {
+      const tmdbUrl = `https://api.themoviedb.org/3/collection/${tmdb_id}?api_key=${TMDB_API_KEY}`;
+      const response = await fetch(tmdbUrl);
+      const data = await response.json();
+      movies = (data.parts || [])
+        .filter(m => m.poster_path)
+        .map(m => ({
+          movie_id: m.id,
+          movie_title: m.title,
+          poster_full_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+          release_date: m.release_date || null,
+        }))
+        .sort((a, b) => (a.release_date || "").localeCompare(b.release_date || ""));
+    } else if (type === "actor") {
+      const tmdbUrl = `https://api.themoviedb.org/3/person/${tmdb_id}/movie_credits?api_key=${TMDB_API_KEY}`;
+      const response = await fetch(tmdbUrl);
+      const data = await response.json();
+      const seen = new Set();
+      movies = (data.cast || [])
+        .filter(m => m.poster_path && !m.adult && m.release_date && m.release_date <= new Date().toISOString().split("T")[0] && (m.vote_count || 0) >= 50 && !(m.genre_ids || []).includes(99) && !seen.has(m.id) && seen.add(m.id))
+        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+        .map(m => ({
+          movie_id: m.id,
+          movie_title: m.title,
+          poster_full_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+          release_date: m.release_date || null,
+          character: m.character || null,
+        }));
+    } else if (type === "director") {
+      const tmdbUrl = `https://api.themoviedb.org/3/person/${tmdb_id}/movie_credits?api_key=${TMDB_API_KEY}`;
+      const response = await fetch(tmdbUrl);
+      const data = await response.json();
+      const seen = new Set();
+      movies = (data.crew || [])
+        .filter(m => m.job === "Director" && m.poster_path && !m.adult && m.release_date && m.release_date <= new Date().toISOString().split("T")[0] && (m.vote_count || 0) >= 50 && !(m.genre_ids || []).includes(99) && !seen.has(m.id) && seen.add(m.id))
+        .sort((a, b) => (a.release_date || "").localeCompare(b.release_date || ""))
+        .map(m => ({
+          movie_id: m.id,
+          movie_title: m.title,
+          poster_full_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+          release_date: m.release_date || null,
+        }));
+    } else if (type === "keyword") {
+      // Fetch all movies tagged with this keyword (paginate up to 5 pages)
+      const seen = new Set();
+      for (let page = 1; page <= 5; page++) {
+        const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_keywords=${tmdb_id}&sort_by=release_date.asc&page=${page}`;
+        const response = await fetch(tmdbUrl);
+        const data = await response.json();
+        if (!data.results || data.results.length === 0) break;
+        const pageMovies = data.results
+          .filter(m => m.poster_path && !m.adult && m.release_date && m.release_date <= new Date().toISOString().split("T")[0] && (m.vote_count || 0) >= 50 && !(m.genre_ids || []).includes(99) && !seen.has(m.id) && seen.add(m.id))
+          .map(m => ({
+            movie_id: m.id,
+            movie_title: m.title,
+            poster_full_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+            release_date: m.release_date || null,
+          }));
+        movies.push(...pageMovies);
+        if (page >= data.total_pages) break;
+      }
+    }
+
+    if (movies.length > 0) {
+      const movieIds = movies.map(m => m.movie_id);
+      const watchedResult = await db.query(
+        `SELECT movie_id, watched_id, user_rating FROM watched_list WHERE user_id = $1 AND movie_id = ANY($2)`,
+        [user_id, movieIds]
+      );
+
+      const watchedMap = new Map();
+      watchedResult.rows.forEach(row => {
+        watchedMap.set(row.movie_id, { watched_id: row.watched_id, user_rating: row.user_rating });
+      });
+
+      movies.forEach(m => {
+        const watched = watchedMap.get(m.movie_id) || watchedMap.get(Number(m.movie_id));
+        if (watched) {
+          m.is_watched = true;
+          m.watched_id = watched.watched_id;
+          m.user_rating = watched.user_rating;
+        } else {
+          m.is_watched = false;
+        }
+      });
+    }
+
+    res.json(movies);
+  } catch (error) {
+    console.error("[GOALS MOVIES]", error);
+    res.status(500).json({ error: "Failed to fetch movies" });
+  }
+});
+
+// Get user's goals
+app.get("/api/goals", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+
+  try {
+    const result = await db.query(
+      `SELECT * FROM user_goals WHERE user_id = $1 ORDER BY created_at DESC`,
+      [user_id]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error("[GOALS LIST]", error);
+    res.status(500).json({ error: "Failed to fetch goals" });
+  }
+});
+
+// Add a goal
+app.post("/api/goals", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { goal_type, tmdb_id, goal_name, profile_path, poster_path } = req.body;
+
+  if (!goal_type || !tmdb_id || !goal_name) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    // Enforce 10-goal limit per user
+    const countResult = await db.query(
+      "SELECT COUNT(*) FROM user_goals WHERE user_id = $1", [user_id]
+    );
+    if (parseInt(countResult.rows[0].count) >= 10) {
+      return res.status(400).json({ error: "Maximum of 10 goals reached" });
+    }
+
+    const result = await db.query(
+      `INSERT INTO user_goals (user_id, goal_type, tmdb_id, goal_name, profile_path, poster_path)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id, goal_type, tmdb_id) DO NOTHING
+       RETURNING *`,
+      [user_id, goal_type, tmdb_id, goal_name, profile_path || null, poster_path || null]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(409).json({ error: "Goal already exists" });
+    }
+
+    console.log(`[GOALS] User ${user_id} added goal: ${goal_type} - ${goal_name}`);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error("[GOALS ADD]", error);
+    res.status(500).json({ error: "Failed to add goal" });
+  }
+});
+
+// Delete a goal
+app.delete("/api/goals/:goal_id", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { goal_id } = req.params;
+
+  try {
+    await db.query(
+      `DELETE FROM user_goals WHERE goal_id = $1 AND user_id = $2`,
+      [goal_id, user_id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error("[GOALS DELETE]", error);
+    res.status(500).json({ error: "Failed to delete goal" });
+  }
+});
+
+// Add movie to a custom goal
+app.post("/api/goals/:goal_id/movies", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { goal_id } = req.params;
+  const { movie_id } = req.body;
+
+  if (!movie_id) return res.status(400).json({ error: "movie_id is required" });
+
+  try {
+    // Verify this goal belongs to the user and is custom
+    const goalResult = await db.query(
+      `SELECT * FROM user_goals WHERE goal_id = $1 AND user_id = $2 AND goal_type = 'custom'`,
+      [goal_id, user_id]
+    );
+    if (goalResult.rows.length === 0) {
+      return res.status(404).json({ error: "Custom goal not found" });
+    }
+
+    // Ensure movie is in the database
+    await ensureMovieInDatabase(movie_id);
+
+    const result = await db.query(
+      `INSERT INTO custom_goal_movies (goal_id, movie_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *`,
+      [goal_id, movie_id]
+    );
+
+    res.json({ success: true, added: result.rows.length > 0 });
+  } catch (error) {
+    console.error("[CUSTOM GOAL ADD MOVIE]", error);
+    res.status(500).json({ error: "Failed to add movie to goal" });
+  }
+});
+
+// Remove movie from a custom goal
+app.delete("/api/goals/:goal_id/movies/:movie_id", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { goal_id, movie_id } = req.params;
+
+  try {
+    // Verify this goal belongs to the user
+    const goalResult = await db.query(
+      `SELECT * FROM user_goals WHERE goal_id = $1 AND user_id = $2 AND goal_type = 'custom'`,
+      [goal_id, user_id]
+    );
+    if (goalResult.rows.length === 0) {
+      return res.status(404).json({ error: "Custom goal not found" });
+    }
+
+    await db.query(
+      `DELETE FROM custom_goal_movies WHERE goal_id = $1 AND movie_id = $2`,
+      [goal_id, movie_id]
+    );
+    res.json({ success: true });
+  } catch (error) {
+    console.error("[CUSTOM GOAL REMOVE MOVIE]", error);
+    res.status(500).json({ error: "Failed to remove movie from goal" });
+  }
+});
+
+// Upload custom image for a goal
+app.post("/api/goals/:goal_id/image", requireLogin, uploadGoalImage.single("file"), async (req, res) => {
+  const user_id = req.session.user_id;
+  const { goal_id } = req.params;
+  const filename = req.file.filename;
+
+  // NSFW check
+  if (await isImageNSFW(req.file.path)) {
+    const fs = (await import("fs")).default;
+    fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: "Image flagged as inappropriate" });
+  }
+
+  // Verify ownership and custom type
+  const check = await db.query(
+    "SELECT goal_id FROM user_goals WHERE goal_id = $1 AND user_id = $2 AND goal_type = 'custom'",
+    [goal_id, user_id]
+  );
+  if (check.rows.length === 0) {
+    return res.status(403).json({ error: "Not authorized" });
+  }
+
+  await db.query("UPDATE user_goals SET custom_image = $1 WHERE goal_id = $2", [filename, goal_id]);
+  res.json({ success: true, filename });
+});
+
+// Delete custom image for a goal
+app.delete("/api/goals/:goal_id/image", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { goal_id } = req.params;
+
+  try {
+    const result = await db.query(
+      "SELECT custom_image FROM user_goals WHERE goal_id = $1 AND user_id = $2 AND goal_type = 'custom'",
+      [goal_id, user_id]
+    );
+    if (result.rows.length === 0) return res.status(403).json({ error: "Not authorized" });
+
+    const filename = result.rows[0].custom_image;
+    if (filename) {
+      const fs = (await import("fs")).default;
+      const filePath = path.join(__dirname, "uploads", "goal_images", filename);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+
+    await db.query("UPDATE user_goals SET custom_image = NULL WHERE goal_id = $1", [goal_id]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("[GOAL IMAGE DELETE]", error);
+    res.status(500).json({ error: "Failed to delete goal image" });
+  }
+});
+
+// Get progress for a specific goal
+app.get("/api/goals/:goal_id/progress", requireLogin, async (req, res) => {
+  const user_id = req.session.user_id;
+  const { goal_id } = req.params;
+
+  try {
+    const goalResult = await db.query(
+      `SELECT * FROM user_goals WHERE goal_id = $1 AND user_id = $2`,
+      [goal_id, user_id]
+    );
+
+    if (goalResult.rows.length === 0) {
+      return res.status(404).json({ error: "Goal not found" });
+    }
+
+    const goal = goalResult.rows[0];
+
+    // Fetch movies for this goal from TMDb
+    let movies = [];
+    if (goal.goal_type === "franchise") {
+      const tmdbUrl = `https://api.themoviedb.org/3/collection/${goal.tmdb_id}?api_key=${TMDB_API_KEY}`;
+      const response = await fetch(tmdbUrl);
+      const data = await response.json();
+      movies = (data.parts || []).filter(m => m.poster_path).map(m => ({
+        movie_id: m.id,
+        movie_title: m.title,
+        poster_full_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+        release_date: m.release_date || null,
+      }));
+    } else if (goal.goal_type === "actor") {
+      const tmdbUrl = `https://api.themoviedb.org/3/person/${goal.tmdb_id}/movie_credits?api_key=${TMDB_API_KEY}`;
+      const response = await fetch(tmdbUrl);
+      const data = await response.json();
+      const seen = new Set();
+      movies = (data.cast || [])
+        .filter(m => m.poster_path && !m.adult && m.release_date && m.release_date <= new Date().toISOString().split("T")[0] && (m.vote_count || 0) >= 50 && !(m.genre_ids || []).includes(99) && !seen.has(m.id) && seen.add(m.id))
+        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
+        .map(m => ({
+          movie_id: m.id,
+          movie_title: m.title,
+          poster_full_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+          release_date: m.release_date || null,
+          character: m.character || null,
+        }));
+    } else if (goal.goal_type === "keyword") {
+      const seen = new Set();
+      for (let page = 1; page <= 5; page++) {
+        const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&with_keywords=${goal.tmdb_id}&sort_by=release_date.asc&page=${page}`;
+        const response = await fetch(tmdbUrl);
+        const data = await response.json();
+        if (!data.results || data.results.length === 0) break;
+        const pageMovies = data.results
+          .filter(m => m.poster_path && !m.adult && m.release_date && m.release_date <= new Date().toISOString().split("T")[0] && (m.vote_count || 0) >= 50 && !(m.genre_ids || []).includes(99) && !seen.has(m.id) && seen.add(m.id))
+          .map(m => ({
+            movie_id: m.id,
+            movie_title: m.title,
+            poster_full_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+            release_date: m.release_date || null,
+          }));
+        movies.push(...pageMovies);
+        if (page >= data.total_pages) break;
+      }
+    } else if (goal.goal_type === "director") {
+      const tmdbUrl = `https://api.themoviedb.org/3/person/${goal.tmdb_id}/movie_credits?api_key=${TMDB_API_KEY}`;
+      const response = await fetch(tmdbUrl);
+      const data = await response.json();
+      const seen = new Set();
+      movies = (data.crew || [])
+        .filter(m => m.job === "Director" && m.poster_path && !m.adult && m.release_date && m.release_date <= new Date().toISOString().split("T")[0] && (m.vote_count || 0) >= 50 && !(m.genre_ids || []).includes(99) && !seen.has(m.id) && seen.add(m.id))
+        .sort((a, b) => (a.release_date || "").localeCompare(b.release_date || ""))
+        .map(m => ({
+          movie_id: m.id,
+          movie_title: m.title,
+          poster_full_url: `https://image.tmdb.org/t/p/w500${m.poster_path}`,
+          release_date: m.release_date || null,
+        }));
+    } else if (goal.goal_type === "custom") {
+      // Custom goals: movies stored in custom_goal_movies table
+      const customMovies = await db.query(
+        `SELECT cgm.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
+         FROM custom_goal_movies cgm
+         JOIN all_movies am ON cgm.movie_id = am.movie_id
+         WHERE cgm.goal_id = $1
+         ORDER BY cgm.added_at ASC`,
+        [goal_id]
+      );
+      movies = customMovies.rows.map(m => ({
+        movie_id: m.movie_id,
+        movie_title: m.movie_title,
+        poster_full_url: m.poster_full_url,
+        release_date: m.movie_release_date || null,
+      }));
+    }
+
+    // Check watched and watchlist status
+    if (movies.length > 0) {
+      const movieIds = movies.map(m => m.movie_id);
+      const [watchedResult, watchlistResult] = await Promise.all([
+        db.query(
+          `SELECT movie_id, watched_id, user_rating FROM watched_list WHERE user_id = $1 AND movie_id = ANY($2)`,
+          [user_id, movieIds]
+        ),
+        db.query(
+          `SELECT movie_id FROM watch_list WHERE user_id = $1 AND movie_id = ANY($2)`,
+          [user_id, movieIds]
+        ),
+      ]);
+
+      const watchedMap = new Map();
+      watchedResult.rows.forEach(row => {
+        watchedMap.set(row.movie_id, { watched_id: row.watched_id, user_rating: row.user_rating });
+      });
+
+      const watchlistSet = new Set();
+      watchlistResult.rows.forEach(row => {
+        watchlistSet.add(row.movie_id);
+        watchlistSet.add(Number(row.movie_id));
+      });
+
+      movies.forEach(m => {
+        const watched = watchedMap.get(m.movie_id) || watchedMap.get(Number(m.movie_id));
+        if (watched) {
+          m.is_watched = true;
+          m.watched_id = watched.watched_id;
+          m.user_rating = watched.user_rating;
+        } else {
+          m.is_watched = false;
+        }
+        m.in_watchlist = watchlistSet.has(m.movie_id) || watchlistSet.has(Number(m.movie_id));
+      });
+    }
+
+    const watchedCount = movies.filter(m => m.is_watched).length;
+    res.json({
+      goal,
+      movies,
+      total: movies.length,
+      watched: watchedCount,
+      percent: movies.length > 0 ? Math.round((watchedCount / movies.length) * 100) : 0,
+    });
+  } catch (error) {
+    console.error("[GOALS PROGRESS]", error);
+    res.status(500).json({ error: "Failed to fetch progress" });
   }
 });
 

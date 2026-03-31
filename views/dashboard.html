@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="/public/css/dashboard.css">
     <link rel="stylesheet" href="/public/css/movie_modal.css">
+    <link rel="stylesheet" href="/public/css/toast.css">
 </head>
 <body>
     <div class="grid-overlay"></div>
@@ -28,7 +29,7 @@
         <a href="/watchlist">Watchlist</a>
         <a href="/add-movie">Search</a>
         <a href="/stats">Stats</a>
-        <span>Goals (coming soon...)</span>
+        <a href="/goals">Goals</a>
         <form action="/logout" method="POST" style="margin:0;">
             <button type="submit" class="mobile-logout">Logout</button>
         </form>
@@ -57,7 +58,7 @@
             <a href="/stats" class="tab">STATS</a>
             <a href="/watched" class="tab">WATCHED</a>
             <a href="/watchlist" class="tab">WATCHLIST</a>
-            <span class="tab">GOALS (coming soon...)</span>
+            <a href="/goals" class="tab">GOALS</a>
             <a href="/dashboard" class="tab active" id="dashboard-tab"></a>
         </div>
     </div>
@@ -216,15 +217,40 @@
             const file = e.target.files[0];
             if (!file) return;
 
+            // Pre-check image
+            const checkForm = new FormData();
+            checkForm.append("file", file);
+            try {
+                const checkRes = await fetch("/api/check-image", { method: "POST", body: checkForm });
+                const checkData = await checkRes.json();
+                if (!checkData.safe) {
+                    let errEl = document.getElementById("pfp-nsfw-error");
+                    if (!errEl) {
+                        errEl = document.createElement("div");
+                        errEl.id = "pfp-nsfw-error";
+                        errEl.style.cssText = "color:#ff6b6b;font-family:'Anonymous Pro',monospace;font-size:13px;margin-top:8px;text-align:center;";
+                        document.getElementById("pfp-input").parentElement.appendChild(errEl);
+                    }
+                    errEl.textContent = "Image flagged as inappropriate. Please choose another image.";
+                    return;
+                }
+            } catch (err) {
+                console.error("Image check failed:", err);
+            }
+
             const formData = new FormData();
             formData.append("file", file);
 
-            await fetch("/api/upload/profile-picture", {
+            const res = await fetch("/api/upload/profile-picture", {
                 method: "POST",
                 body: formData
             });
 
-            location.reload();
+            const data = await res.json();
+            if (res.ok && data.success) {
+                showToast("Image uploaded");
+                setTimeout(() => location.reload(), 500);
+            }
         });
 
         async function loadDashboard() {
@@ -750,6 +776,7 @@
     <script>
         window.onMovieModalClose = () => { showAnimations = true; loadDashboard(); };
     </script>
+    <script src="/public/js/toast.js"></script>
     <script src="/public/js/admin-button.js"></script>
     <script src="/public/js/impersonate-banner.js"></script>
 </body>
