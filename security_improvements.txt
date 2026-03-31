@@ -142,12 +142,12 @@ STATUS KEY:
     Fix: Acceptable if guest account has no elevated privileges. Consider
          moving to env var.
 
-17. [TODO] No Rate Limiting
-    Issue: No rate limiting on login, signup, password reset, or search.
-    Attack: Brute-force passwords, flood reset emails, abuse TMDb API quota.
-    Fix: Install express-rate-limit:
-         npm install express-rate-limit
-         Apply to auth and search endpoints.
+17. [DONE] Rate Limiting Added
+    Fixed: Added express-rate-limit with per-IP limits:
+         - Auth (login/signup/guest): 5 req / 15 min
+         - Password reset: 3 req / 15 min
+         - Search (movies/users): 30 req / min
+         - General API: 100 req / min
 
 18. [TODO] Old Upload Files Never Cleaned Up
     Issue: When a user uploads a new profile picture, the old file stays

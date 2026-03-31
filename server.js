@@ -15,6 +15,7 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import * as tf from "@tensorflow/tfjs-node";
 import * as nsfw from "nsfwjs";
+import rateLimit from "express-rate-limit";
 
 // ----------------------------------------------------
 // Path Fix (ESM)
@@ -428,6 +429,44 @@ async function ensureMovieInDatabase(movie_id) {
   }
 }
 
+// ----------------------------------------------------
+// Rate Limiting
+// ----------------------------------------------------
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: { error: "Too many attempts. Please try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: { error: "Too many password reset requests. Please try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const searchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30,
+  message: { error: "Too many search requests. Please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: { error: "Too many requests. Please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply general API limiter to all /api/ routes
+app.use("/api/", apiLimiter);
+
 // ============================================================================
 // ROUTES — HTML PAGES
 // ============================================================================
@@ -444,7 +483,7 @@ app.get("/signup", (req, res) => {
   res.sendFile(path.join(__dirname, "views/signup.html"));
 });
 
-app.get("/guest-login", async (req, res) => {
+app.get("/guest-login", authLimiter, async (req, res) => {
   const result = await db.query("SELECT * FROM users WHERE email = $1", ["guest@truereview.com"]);
   if (result.rows.length === 0) return res.redirect("/login?error=1");
   const user = result.rows[0];
@@ -455,7 +494,7 @@ app.get("/guest-login", async (req, res) => {
 });
 
 // SIGNUP - CREATE NEW ACCOUNT
-app.post("/signup", async (req, res) => {
+app.post("/signup", authLimiter, async (req, res) => {
   const { username, display_name, email, password } = req.body;
 
   // Validate email format
@@ -509,7 +548,7 @@ app.post("/signup", async (req, res) => {
 });
 
 // LOGIN USING EMAIL + PASSWORD
-app.post("/login", async (req, res) => {
+app.post("/login", authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   // Validate email format
@@ -560,7 +599,7 @@ app.get("/forgot-password", (req, res) => {
 });
 
 // FORGOT PASSWORD — Handle email submission
-app.post("/forgot-password", async (req, res) => {
+app.post("/forgot-password", passwordResetLimiter, async (req, res) => {
   const { email } = req.body;
   try {
     const result = await db.query("SELECT user_id FROM users WHERE email = $1", [email]);
@@ -618,7 +657,7 @@ app.get("/reset-password/:token", async (req, res) => {
 });
 
 // RESET PASSWORD — Handle new password submission
-app.post("/reset-password/:token", async (req, res) => {
+app.post("/reset-password/:token", passwordResetLimiter, async (req, res) => {
   const { token } = req.params;
   const { password, confirmPassword } = req.body;
 
@@ -1770,7 +1809,7 @@ app.get("/search", requireLogin, (req, res) => {
 });
 
 // SEARCH MOVIES - Using TMDb API
-app.get("/api/search-movies", requireLogin, async (req, res) => {
+app.get("/api/search-movies", searchLimiter, requireLogin, async (req, res) => {
   const q = req.query.q || "";
   const user_id = req.session.user_id;
 
@@ -1863,7 +1902,7 @@ app.get("/api/search-movies", requireLogin, async (req, res) => {
 });
 
 // USER SEARCH - Fuzzy search by username
-app.get("/api/search-users", requireLogin, async (req, res) => {
+app.get("/api/search-users", searchLimiter, requireLogin, async (req, res) => {
   const q = req.query.q || "";
   const current_user_id = req.session.user_id;
 

@@ -9,7 +9,8 @@
       "Bash(cp /Users/parkernelson/Desktop/Education/coding/project_astonish/TrueReview_ACTIVE/public/js/watched.js \"$BACKUP_DIR/watched.js\")",
       "Bash(cp /Users/parkernelson/Desktop/Education/coding/project_astonish/TrueReview_ACTIVE/public/js/add_movies.js \"$BACKUP_DIR/add_movies.js\")",
       "Bash(cp /Users/parkernelson/Desktop/Education/coding/project_astonish/TrueReview_ACTIVE/views/watched.html \"$BACKUP_DIR/watched.html\")",
-      "Bash(find /Users/parkernelson/Desktop/Education/coding/project_astonish/TrueReview_ACTIVE/public -name *profile* -o -name *user*)"
+      "Bash(find /Users/parkernelson/Desktop/Education/coding/project_astonish/TrueReview_ACTIVE/public -name *profile* -o -name *user*)",
+      "Bash(npm install:*)"
     ]
   }
 }
