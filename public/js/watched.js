@@ -19,6 +19,9 @@ async function loadWatched() {
             movie.entryNumber = index + 1;
         });
 
+        // Build genre submenu from loaded data
+        buildGenreSubmenu();
+
         // Apply saved filter or default
         applyFilter(currentFilter);
     } catch (err) {
@@ -26,15 +29,83 @@ async function loadWatched() {
     }
 }
 
+function buildGenreSubmenu() {
+    const genreSet = new Set();
+    allMovies.forEach(movie => {
+        if (movie.genre) {
+            movie.genre.split(',').forEach(g => {
+                const trimmed = g.trim();
+                if (trimmed) genreSet.add(trimmed);
+            });
+        }
+    });
+    const genres = [...genreSet].sort();
+    const submenu = document.getElementById('genre-submenu');
+    if (submenu) {
+        submenu.innerHTML = genres.map(g =>
+            `<div class="filter-option" data-filter="genre-${g}">${g.toUpperCase()}</div>`
+        ).join('');
+
+        // Attach click handlers to new genre options
+        submenu.querySelectorAll('.filter-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const filterType = option.getAttribute('data-filter');
+                if (filterType) {
+                    e.stopPropagation();
+                    document.querySelectorAll('.filter-option').forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                    applyFilter(filterType);
+                    document.getElementById('filter-dropdown').classList.remove('active');
+                }
+            });
+        });
+    }
+}
+
+function getFilterDisplayName(filterType) {
+    const names = {
+        'activity-asc': 'Activity: First → Last',
+        'rating-desc': 'Rating: Highest → Lowest',
+        'rating-asc': 'Rating: Lowest → Highest',
+        'year-desc': 'Year: Newest → Oldest',
+        'year-asc': 'Year: Oldest → Newest',
+        'alpha-asc': 'Alphabetical: A → Z',
+        'alpha-desc': 'Alphabetical: Z → A',
+        'theater-yes': 'In Theaters',
+        'theater-no': 'Not In Theaters',
+        'has-review': 'Has Written Review',
+    };
+    if (names[filterType]) return names[filterType];
+    if (filterType.startsWith('rating-')) return `Rating: ${filterType.split('-')[1]}/10`;
+    if (filterType.startsWith('genre-')) return `Genre: ${filterType.substring(6)}`;
+    return filterType;
+}
+
 function applyFilter(filterType) {
     currentFilter = filterType;
     // Save filter to sessionStorage
     sessionStorage.setItem('watchedFilter', filterType);
 
+    // Show/hide remove filter button and active filter label
+    const isDefault = filterType === 'activity-desc';
+    const removeBtn = document.getElementById('remove-filter-btn');
+    const filterLabel = document.getElementById('active-filter-label');
+    if (removeBtn) {
+        removeBtn.style.display = isDefault ? 'none' : 'inline-block';
+    }
+    if (filterLabel) {
+        if (isDefault) {
+            filterLabel.style.display = 'none';
+        } else {
+            filterLabel.style.display = 'inline-block';
+            filterLabel.textContent = getFilterDisplayName(filterType);
+        }
+    }
+
     let filteredMovies = [...allMovies];
 
     // Apply rating filters (ranges: 0/10 = 0.0-0.9, 1/10 = 1.0-1.9, 2/10 = 2.0-2.9, etc.)
-    if (filterType.startsWith('rating-')) {
+    if (filterType.startsWith('rating-') && filterType !== 'rating-desc' && filterType !== 'rating-asc') {
         const ratingBase = parseInt(filterType.split('-')[1]);
         filteredMovies = filteredMovies.filter(movie => {
             const userRating = parseFloat(movie.user_rating);
@@ -44,6 +115,20 @@ function applyFilter(filterType) {
             }
             // For others, match range (e.g., 0/10 matches 0.0 to 0.9, 9/10 matches 9.0 to 9.9)
             return userRating >= ratingBase && userRating < (ratingBase + 1);
+        });
+    }
+
+    // Apply review filter
+    if (filterType === 'has-review') {
+        filteredMovies = filteredMovies.filter(movie => movie.review && movie.review.trim() !== '');
+    }
+
+    // Apply genre filter
+    if (filterType.startsWith('genre-')) {
+        const genre = filterType.substring(6);
+        filteredMovies = filteredMovies.filter(movie => {
+            if (!movie.genre) return false;
+            return movie.genre.split(',').map(g => g.trim()).includes(genre);
         });
     }
 
@@ -87,6 +172,12 @@ function applyFilter(filterType) {
 
                 return yearA - yearB;
             });
+            break;
+        case 'rating-desc':
+            filteredMovies.sort((a, b) => (parseFloat(b.user_rating) || 0) - (parseFloat(a.user_rating) || 0));
+            break;
+        case 'rating-asc':
+            filteredMovies.sort((a, b) => (parseFloat(a.user_rating) || 0) - (parseFloat(b.user_rating) || 0));
             break;
         case 'alpha-asc':
             filteredMovies.sort((a, b) => a.movie_title.localeCompare(b.movie_title));
@@ -181,6 +272,17 @@ document.addEventListener('DOMContentLoaded', () => {
             opt.classList.add('active');
         }
     });
+
+    // Remove filter button
+    const removeFilterBtn = document.getElementById('remove-filter-btn');
+    if (removeFilterBtn) {
+        removeFilterBtn.addEventListener('click', () => {
+            filterOptions.forEach(opt => opt.classList.remove('active'));
+            const defaultOpt = document.querySelector('[data-filter="activity-desc"]');
+            if (defaultOpt) defaultOpt.classList.add('active');
+            applyFilter('activity-desc');
+        });
+    }
 
     filterBtn.addEventListener('click', (e) => {
         e.stopPropagation();

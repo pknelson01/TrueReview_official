@@ -149,7 +149,8 @@ function requireLogin(req, res, next) {
 
 async function requireAdmin(req, res, next) {
   if (!req.session.user_id) return res.redirect("/login");
-  const result = await db.query("SELECT admin_yn FROM users WHERE user_id = $1", [req.session.user_id]);
+  const checkId = req.session.admin_user_id || req.session.user_id;
+  const result = await db.query("SELECT admin_yn FROM users WHERE user_id = $1", [checkId]);
   if (result.rows[0]?.admin_yn !== 1) return res.status(403).sendFile(path.join(__dirname, "views/index.html"));
   next();
 }
@@ -683,6 +684,7 @@ app.get("/admin/user-management", requireAdmin, (req, res) => {
 // Get all users ordered by popcorn kernels (admin only)
 app.get("/api/admin/users", requireAdmin, async (req, res) => {
   try {
+    const adminId = req.session.admin_user_id || req.session.user_id;
     const result = await db.query(`
       SELECT
         u.user_id,
@@ -697,7 +699,7 @@ app.get("/api/admin/users", requireAdmin, async (req, res) => {
       FROM users u
       ORDER BY u.popcorn_kernels DESC NULLS LAST
     `);
-    res.json(result.rows);
+    res.json({ admin_user_id: adminId, users: result.rows });
   } catch (err) {
     console.error("[ADMIN] Error fetching users:", err);
     res.status(500).json({ error: "Failed to fetch users" });
@@ -707,6 +709,9 @@ app.get("/api/admin/users", requireAdmin, async (req, res) => {
 // Toggle user active status (admin only)
 app.post("/api/admin/users/:user_id/status", requireAdmin, async (req, res) => {
   const { user_id } = req.params;
+  if (parseInt(user_id) === req.session.user_id) {
+    return res.status(403).json({ error: "You cannot change your own status." });
+  }
   try {
     const current = await db.query("SELECT active_yn FROM users WHERE user_id = $1", [user_id]);
     if (current.rows.length === 0) return res.status(404).json({ error: "User not found" });
@@ -723,6 +728,9 @@ app.post("/api/admin/users/:user_id/status", requireAdmin, async (req, res) => {
 // Toggle user role (admin only)
 app.post("/api/admin/users/:user_id/role", requireAdmin, async (req, res) => {
   const { user_id } = req.params;
+  if (parseInt(user_id) === req.session.user_id) {
+    return res.status(403).json({ error: "You cannot change your own role." });
+  }
   try {
     const current = await db.query("SELECT admin_yn FROM users WHERE user_id = $1", [user_id]);
     if (current.rows.length === 0) return res.status(404).json({ error: "User not found" });
@@ -752,6 +760,71 @@ app.post("/api/admin/users/:user_id/password", requireAdmin, async (req, res) =>
   } catch (err) {
     console.error("[ADMIN] Error updating password:", err);
     res.status(500).json({ error: "Failed to update password" });
+  }
+});
+
+// Admin: view as another user (impersonate)
+app.post("/api/admin/users/:user_id/impersonate", requireAdmin, async (req, res) => {
+  const { user_id } = req.params;
+  if (parseInt(user_id) === req.session.user_id) {
+    return res.status(403).json({ error: "You are already logged in as this user." });
+  }
+  try {
+    const result = await db.query("SELECT user_id, username FROM users WHERE user_id = $1", [user_id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    console.log(`[ADMIN] User ${req.session.user_id} viewing as user ${user_id}`);
+    req.session.admin_user_id = req.session.user_id;
+    req.session.user_id = parseInt(user_id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[ADMIN] Error impersonating user:", err);
+    res.status(500).json({ error: "Failed to impersonate user" });
+  }
+});
+
+// Admin: stop impersonating and return to admin account
+app.post("/api/admin/stop-impersonating", requireLogin, (req, res) => {
+  if (!req.session.admin_user_id) {
+    return res.status(400).json({ error: "Not currently impersonating." });
+  }
+  const adminId = req.session.admin_user_id;
+  req.session.user_id = adminId;
+  delete req.session.admin_user_id;
+  console.log(`[ADMIN] User ${adminId} stopped impersonating`);
+  res.json({ success: true });
+});
+
+// Check if currently impersonating
+app.get("/api/admin/impersonating", requireLogin, async (req, res) => {
+  if (!req.session.admin_user_id) {
+    return res.json({ impersonating: false });
+  }
+  const result = await db.query("SELECT username, display_name FROM users WHERE user_id = $1", [req.session.user_id]);
+  res.json({
+    impersonating: true,
+    viewing_as: result.rows[0]?.display_name || result.rows[0]?.username
+  });
+});
+
+// Admin: delete a user (admin only)
+app.delete("/api/admin/users/:user_id", requireAdmin, async (req, res) => {
+  const { user_id } = req.params;
+  if (parseInt(user_id) === req.session.user_id) {
+    return res.status(403).json({ error: "You cannot delete your own account." });
+  }
+  try {
+    const user = await db.query("SELECT username FROM users WHERE user_id = $1", [user_id]);
+    if (user.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    await db.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [user_id]);
+    await db.query("DELETE FROM watch_list WHERE user_id = $1", [user_id]);
+    await db.query("DELETE FROM watched_list WHERE user_id = $1", [user_id]);
+    await db.query("DELETE FROM user_follows WHERE follower_id = $1 OR following_id = $1", [user_id]);
+    await db.query("DELETE FROM users WHERE user_id = $1", [user_id]);
+    console.log(`[ADMIN] Deleted user ${user_id} (${user.rows[0].username})`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error("[ADMIN] Error deleting user:", err);
+    res.status(500).json({ error: "Failed to delete user" });
   }
 });
 
@@ -1130,7 +1203,7 @@ app.get("/api/watched", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
 
   const sql = `
-    SELECT wl.watched_id, wl.user_rating, wl.in_theater, am.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
+    SELECT wl.watched_id, wl.user_rating, wl.in_theater, wl.review, wl.genre, am.movie_id, am.movie_title, am.poster_full_url, am.movie_release_date
     FROM watched_list wl
     JOIN all_movies am ON wl.movie_id = am.movie_id
     WHERE wl.user_id = $1
@@ -1498,7 +1571,7 @@ app.post("/update-profile", requireLogin, async (req, res) => {
 
   // Validate display_name if provided
   if (display_name) {
-    const displayNameRegex = /^[a-zA-Z0-9]{1,20}$/;
+    const displayNameRegex = /^[a-zA-Z0-9 ]{1,20}$/;
     if (!displayNameRegex.test(display_name)) {
       return res.redirect("/edit-profile?error=invalid_display_name");
     }
@@ -1510,16 +1583,20 @@ app.post("/update-profile", requireLogin, async (req, res) => {
     WHERE user_id = $6
   `;
 
-  await db.query(sql, [
-    username,
-    display_name || username,
-    title || null,
-    bio || null,
-    favorite_movie || null,
-    user_id
-  ]);
-
-  res.redirect("/dashboard");
+  try {
+    await db.query(sql, [
+      username,
+      display_name || username,
+      title || null,
+      bio || null,
+      favorite_movie || null,
+      user_id
+    ]);
+    res.redirect("/dashboard");
+  } catch (err) {
+    console.error("[PROFILE UPDATE] Error:", err);
+    res.redirect("/edit-profile?error=update_failed");
+  }
 });
 
 // CHANGE PASSWORD

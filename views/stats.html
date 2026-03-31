@@ -87,7 +87,7 @@
                     <div class="stat-card">
                         <div class="card-header-row">
                             <div class="card-title">Top Actors</div>
-                            <button class="actor-toggle active" id="most-watched-toggle" data-scope="main">Main 5</button>
+                            <button class="actor-toggle active" id="most-watched-toggle" data-scope="main">Main Actors</button>
                         </div>
                         <ol class="stat-list" id="most-watched-actors"></ol>
                     </div>
@@ -110,9 +110,9 @@
                         <div class="card-header-row">
                             <div>
                                 <div class="card-title">Top Actors</div>
-                                <div class="card-subtitle" id="highest-rated-subtitle">min. 3 movies, top 5 billed</div>
+                                <div class="card-subtitle" id="highest-rated-subtitle">min. 3 movies, main actors</div>
                             </div>
-                            <button class="actor-toggle active" id="highest-rated-toggle" data-scope="main">Main 5</button>
+                            <button class="actor-toggle active" id="highest-rated-toggle" data-scope="main">Main Actors</button>
                         </div>
                         <ol class="stat-list" id="highest-rated-actors"></ol>
                     </div>
@@ -233,7 +233,7 @@
 
                 // Update subtitle
                 document.getElementById('highest-rated-subtitle').textContent =
-                    scope === 'all' ? 'min. 3 movies, all actors' : 'min. 3 movies, top 5 billed';
+                    scope === 'all' ? 'min. 3 movies, full cast' : 'min. 3 movies, main actors';
 
                 // Theater Stats
                 const theaterAvg = document.getElementById('theater-avg-rating');
@@ -319,12 +319,14 @@
                 currentActorScope = currentActorScope === 'main' ? 'all' : 'main';
                 // Update all toggle buttons
                 document.querySelectorAll('.actor-toggle').forEach(b => {
-                    b.textContent = currentActorScope === 'main' ? 'Main 5' : 'All Actors';
+                    b.textContent = currentActorScope === 'main' ? 'Main Actors' : 'Full Cast';
                     b.dataset.scope = currentActorScope;
                 });
                 loadStats(currentActorScope);
             });
         });
     </script>
+    <script src="/public/js/admin-button.js"></script>
+    <script src="/public/js/impersonate-banner.js"></script>
 </body>
 </html>

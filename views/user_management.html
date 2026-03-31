@@ -42,7 +42,6 @@
                 <div class="site-title">Admin Panel</div>
                 <div class="header-search">
                     <a href="/add-movie" class="search-btn">Search</a>
-                    <a href="/admin/user-management" class="admin-btn">Admin</a>
                 </div>
             </div>
             <div class="status-section">
@@ -91,6 +90,30 @@
             </div>
         </div>
 
+        <!-- Impersonate Confirmation Modal -->
+        <div class="modal-overlay" id="impersonate-modal">
+            <div class="modal-box">
+                <div class="modal-title" id="impersonate-modal-title">View as User</div>
+                <div class="modal-message" id="impersonate-modal-message"></div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-yes" id="impersonate-modal-yes">Yes, View</button>
+                    <button class="modal-btn modal-btn-no" id="impersonate-modal-no">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete User Modal -->
+        <div class="modal-overlay" id="delete-modal">
+            <div class="modal-box">
+                <div class="modal-title" id="delete-modal-title">Delete User</div>
+                <div class="modal-message" id="delete-modal-message"></div>
+                <div class="modal-buttons">
+                    <button class="modal-btn modal-btn-yes modal-btn-danger" id="delete-modal-yes">Yes, Delete</button>
+                    <button class="modal-btn modal-btn-no" id="delete-modal-no">Cancel</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Change Password Modal -->
         <div class="modal-overlay" id="pw-modal">
             <div class="modal-box">
@@ -130,14 +153,17 @@
     </div>
 
     <script>
+        let currentAdminId = null;
+
         // Load and render users
         async function loadUsers() {
             const list = document.getElementById('users-list');
             try {
                 const res = await fetch('/api/admin/users');
-                const users = await res.json();
+                const data = await res.json();
+                currentAdminId = data.admin_user_id;
                 list.innerHTML = '';
-                users.forEach(u => list.appendChild(buildRow(u)));
+                data.users.forEach(u => list.appendChild(buildRow(u)));
             } catch (err) {
                 list.innerHTML = '<div class="loading-msg">Failed to load users.</div>';
             }
@@ -150,10 +176,11 @@
 
             const isActive = u.active_yn !== 0;
             const isAdmin = u.admin_yn === 1;
+            const isSelf = u.user_id === currentAdminId;
 
             row.innerHTML = `
                 <div class="col-user">
-                    <div class="user-username">@${u.username}</div>
+                    <div class="user-username">@${u.username}${isSelf ? ' <span class="admin-tag">(ADMIN)</span>' : ''}</div>
                     <div class="user-display">${u.display_name}</div>
                 </div>
                 <div class="col-stats">
@@ -174,21 +201,35 @@
                         <div class="stat-label">Avg Rating</div>
                     </div>
                 </div>
-                <div class="col-status">
+                <div class="col-status ${isSelf ? 'self-actions' : ''}">
+                    ${isSelf ? '' : `
                     <button class="status-btn ${isActive ? 'active' : 'deactivated'}" data-user-id="${u.user_id}" data-active="${isActive ? 1 : 0}">
                         ${isActive ? 'Active' : 'Deactivated'}
                     </button>
                     <button class="role-btn ${isAdmin ? 'admin' : 'basic'}" data-user-id="${u.user_id}" data-admin="${isAdmin ? 1 : 0}">
                         ${isAdmin ? 'Admin' : 'Basic'}
                     </button>
+                    `}
                     <button class="change-pw-btn" data-user-id="${u.user_id}" data-username="${u.username}">
                         Change Password
                     </button>
+                    ${isSelf ? '' : `
+                    <button class="impersonate-btn" data-user-id="${u.user_id}" data-username="${u.username}">
+                        View
+                    </button>
+                    <button class="delete-btn" data-user-id="${u.user_id}" data-username="${u.username}">
+                        Delete
+                    </button>
+                    `}
                 </div>
             `;
 
-            row.querySelector('.status-btn').addEventListener('click', handleStatusClick);
-            row.querySelector('.role-btn').addEventListener('click', handleRoleClick);
+            if (!isSelf) {
+                row.querySelector('.status-btn').addEventListener('click', handleStatusClick);
+                row.querySelector('.role-btn').addEventListener('click', handleRoleClick);
+                row.querySelector('.impersonate-btn').addEventListener('click', handleImpersonateClick);
+                row.querySelector('.delete-btn').addEventListener('click', handleDeleteClick);
+            }
             row.querySelector('.change-pw-btn').addEventListener('click', handleChangePwClick);
             return row;
         }
@@ -336,6 +377,85 @@
 
             submit.addEventListener('click', onSubmit);
             cancel.addEventListener('click', onCancel);
+            modal.addEventListener('click', e => { if (e.target === modal) cleanup(); }, { once: true });
+        }
+
+        function handleImpersonateClick(e) {
+            const btn = e.currentTarget;
+            const userId = btn.dataset.userId;
+            const username = btn.dataset.username;
+
+            const modal = document.getElementById('impersonate-modal');
+            document.getElementById('impersonate-modal-message').textContent = `You will view the app as @${username}. You can return to admin at any time.`;
+            modal.classList.add('active');
+
+            const yes = document.getElementById('impersonate-modal-yes');
+            const no = document.getElementById('impersonate-modal-no');
+
+            const cleanup = () => {
+                modal.classList.remove('active');
+                yes.removeEventListener('click', onYes);
+                no.removeEventListener('click', onNo);
+            };
+
+            const onYes = async () => {
+                cleanup();
+                try {
+                    const res = await fetch(`/api/admin/users/${userId}/impersonate`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = '/dashboard';
+                    }
+                } catch (err) {
+                    console.error('Failed to impersonate:', err);
+                }
+            };
+
+            const onNo = () => cleanup();
+
+            yes.addEventListener('click', onYes);
+            no.addEventListener('click', onNo);
+            modal.addEventListener('click', e => { if (e.target === modal) cleanup(); }, { once: true });
+        }
+
+        function handleDeleteClick(e) {
+            const btn = e.currentTarget;
+            const userId = btn.dataset.userId;
+            const username = btn.dataset.username;
+
+            const modal = document.getElementById('delete-modal');
+            document.getElementById('delete-modal-message').textContent = `Are you sure you want to permanently delete @${username}? This will remove all their data and cannot be undone.`;
+            modal.classList.add('active');
+
+            const yes = document.getElementById('delete-modal-yes');
+            const no = document.getElementById('delete-modal-no');
+
+            const cleanup = () => {
+                modal.classList.remove('active');
+                yes.removeEventListener('click', onYes);
+                no.removeEventListener('click', onNo);
+            };
+
+            const onYes = async () => {
+                cleanup();
+                try {
+                    const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.success) {
+                        const row = btn.closest('.user-row');
+                        if (row) row.remove();
+                    } else if (data.error) {
+                        alert(data.error);
+                    }
+                } catch (err) {
+                    console.error('Failed to delete user:', err);
+                }
+            };
+
+            const onNo = () => cleanup();
+
+            yes.addEventListener('click', onYes);
+            no.addEventListener('click', onNo);
             modal.addEventListener('click', e => { if (e.target === modal) cleanup(); }, { once: true });
         }
 

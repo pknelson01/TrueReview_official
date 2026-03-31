@@ -67,6 +67,8 @@
                 <h1 class="watched-title">Watched List</h1>
                 <div class="total-entries" id="total-entries">TOTAL ENTRIES: 0</div>
                 <div class="filter-section">
+                    <div class="active-filter-label" id="active-filter-label" style="display:none;"></div>
+                    <button class="remove-filter-btn" id="remove-filter-btn" style="display:none;">REMOVE FILTER</button>
                     <button class="filter-btn" id="filter-btn">FILTER</button>
                     <div class="filter-dropdown" id="filter-dropdown">
                         <div class="filter-option active" data-filter="activity-desc">MY ACTIVITY (LAST→FIRST)</div>
@@ -87,6 +89,15 @@
                                 <div class="filter-option" data-filter="rating-0">0/10 ONLY</div>
                             </div>
                         </div>
+                        <div class="filter-option" data-filter="rating-desc">RATING (HIGHEST→LOWEST)</div>
+                        <div class="filter-option" data-filter="rating-asc">RATING (LOWEST→HIGHEST)</div>
+                        <div class="filter-option has-submenu">
+                            GENRE
+                            <div class="filter-submenu" id="genre-submenu">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                        <div class="filter-option" data-filter="has-review">HAS WRITTEN REVIEW</div>
                         <div class="filter-option" data-filter="year-desc">YEAR (NEWEST→OLDEST)</div>
                         <div class="filter-option" data-filter="year-asc">YEAR (OLDEST→NEWEST)</div>
                         <div class="filter-option" data-filter="alpha-asc">ALPHABETICAL (A→Z)</div>
@@ -164,5 +175,6 @@
         };
     </script>
     <script src="/public/js/admin-button.js"></script>
+    <script src="/public/js/impersonate-banner.js"></script>
 </body>
 </html>

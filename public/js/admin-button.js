@@ -9,35 +9,36 @@
         const style = document.createElement('style');
         style.textContent = `
             .admin-btn {
-                background: transparent;
-                border: 1px solid #f5c518;
+                background: #1a1a1a;
+                border: 2px solid #f5c518;
                 color: #f5c518;
-                padding: 6px 12px;
+                padding: 8px 80px;
                 font-family: 'Oswald', sans-serif;
-                font-size: 10px;
-                letter-spacing: 1px;
+                font-size: 13px;
+                letter-spacing: 2px;
                 text-transform: uppercase;
                 cursor: pointer;
                 transition: all 0.3s ease;
                 text-decoration: none;
                 display: inline-block;
-                margin-left: 8px;
             }
             .admin-btn:hover {
                 background: #f5c518;
-                color: #2B2B2B;
+                color: #1a1a1a;
             }
         `;
         document.head.appendChild(style);
 
-        // Desktop: inject after search button
-        const headerSearch = document.querySelector('.header-search');
-        if (headerSearch) {
+        // Desktop: inject into header-bar, absolutely centered
+        const headerBar = document.querySelector('.header-bar');
+        if (headerBar) {
+            headerBar.style.position = 'relative';
             const adminBtn = document.createElement('a');
             adminBtn.href = '/admin/user-management';
             adminBtn.className = 'admin-btn';
             adminBtn.textContent = 'Admin';
-            headerSearch.appendChild(adminBtn);
+            adminBtn.style.cssText = 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;';
+            headerBar.appendChild(adminBtn);
         }
 
         // Mobile: inject into mobile menu after first link
