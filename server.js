@@ -16,6 +16,7 @@ import crypto from "crypto";
 import * as tf from "@tensorflow/tfjs-node";
 import * as nsfw from "nsfwjs";
 import rateLimit from "express-rate-limit";
+import sharp from "sharp";
 
 // ----------------------------------------------------
 // Path Fix (ESM)
@@ -183,6 +184,17 @@ const uploadBackground = multer({ storage: backgroundStorage });
 const uploadMemory = multer({ storage: memoryStorage });
 const uploadGoalImage = multer({ storage: goalImageStorage });
 const uploadCheck = multer({ dest: "./uploads/temp" });
+
+// Convert uploaded images to .webp for universal browser/mobile compatibility
+async function convertToWebp(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === ".webp") return filePath;
+  const webpPath = filePath.replace(/\.[^.]+$/, ".webp");
+  await sharp(filePath).webp({ quality: 85 }).toFile(webpPath);
+  const fs = (await import("fs")).default;
+  if (fs.existsSync(filePath) && filePath !== webpPath) fs.unlinkSync(filePath);
+  return webpPath;
+}
 
 // ----------------------------------------------------
 // NSFW Image Moderation
@@ -1634,13 +1646,15 @@ app.delete("/api/watchlist/:movie_id", requireLogin, async (req, res) => {
 /* ---------------- PROFILE PICTURE ---------------- */
 app.post("/api/upload/profile-picture", requireLogin, uploadProfilePic.single("file"), async (req, res) => {
   const user_id = req.session.user_id;
-  const filename = req.file.filename;
 
   if (await isImageNSFW(req.file.path)) {
     const fs = (await import("fs")).default;
     fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: "Image flagged as inappropriate" });
   }
+
+  const convertedPath = await convertToWebp(req.file.path);
+  const filename = path.basename(convertedPath);
 
   await db.query(
     `UPDATE users SET profile_picture = $1 WHERE user_id = $2`,
@@ -1653,13 +1667,15 @@ app.post("/api/upload/profile-picture", requireLogin, uploadProfilePic.single("f
 /* ---------------- BACKGROUND PHOTO ---------------- */
 app.post("/api/upload/background", requireLogin, uploadBackground.single("file"), async (req, res) => {
   const user_id = req.session.user_id;
-  const filename = req.file.filename;
 
   if (await isImageNSFW(req.file.path)) {
     const fs = (await import("fs")).default;
     fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: "Image flagged as inappropriate" });
   }
+
+  const convertedPath = await convertToWebp(req.file.path);
+  const filename = path.basename(convertedPath);
 
   await db.query(
     `UPDATE users SET profile_background_photo = $1 WHERE user_id = $2`,
@@ -1673,13 +1689,15 @@ app.post("/api/upload/background", requireLogin, uploadBackground.single("file")
 app.post("/api/upload/memory/:watched_id", requireLogin, uploadMemory.single("file"), async (req, res) => {
   const user_id = req.session.user_id;
   const watched_id = req.params.watched_id;
-  const filename = req.file.filename;
 
   if (await isImageNSFW(req.file.path)) {
     const fs = (await import("fs")).default;
     fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: "Image flagged as inappropriate" });
   }
+
+  const convertedPath = await convertToWebp(req.file.path);
+  const filename = path.basename(convertedPath);
 
   // Verify ownership
   const check = await db.query(
@@ -2740,7 +2758,6 @@ app.delete("/api/goals/:goal_id/movies/:movie_id", requireLogin, async (req, res
 app.post("/api/goals/:goal_id/image", requireLogin, uploadGoalImage.single("file"), async (req, res) => {
   const user_id = req.session.user_id;
   const { goal_id } = req.params;
-  const filename = req.file.filename;
 
   // NSFW check
   if (await isImageNSFW(req.file.path)) {
@@ -2748,6 +2765,9 @@ app.post("/api/goals/:goal_id/image", requireLogin, uploadGoalImage.single("file
     fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: "Image flagged as inappropriate" });
   }
+
+  const convertedPath = await convertToWebp(req.file.path);
+  const filename = path.basename(convertedPath);
 
   // Verify ownership and custom type
   const check = await db.query(

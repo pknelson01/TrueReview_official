@@ -324,6 +324,71 @@ body::before {
     color: var(--steel);
 }
 
+.filter-section {
+    position: relative;
+    margin-top: 10px;
+}
+
+.filter-btn {
+    background: transparent;
+    border: 2px solid var(--steel);
+    color: var(--steel);
+    padding: 10px 18px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+    border-color: var(--white);
+    color: var(--white);
+}
+
+.filter-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: var(--charcoal);
+    border: 2px solid var(--white);
+    z-index: 100;
+    min-width: 220px;
+    margin-top: 4px;
+}
+
+.filter-dropdown.active {
+    display: block;
+}
+
+.filter-option {
+    padding: 12px 18px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--steel);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.filter-option:last-child {
+    border-bottom: none;
+}
+
+.filter-option:hover {
+    background: rgba(255,255,255,0.1);
+    color: var(--white);
+}
+
+.filter-option.active {
+    color: var(--admin-gold);
+}
+
 .users-table {
     background: var(--charcoal);
     border: 2px solid var(--white);

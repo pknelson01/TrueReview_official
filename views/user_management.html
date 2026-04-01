@@ -133,6 +133,18 @@
 
         <div class="search-bar-wrap">
             <input type="text" id="user-search" class="user-search-input" placeholder="Search by username or display name..." />
+            <div class="filter-section">
+                <button class="filter-btn" id="filter-btn">SORT: KERNELS</button>
+                <div class="filter-dropdown" id="filter-dropdown">
+                    <div class="filter-option active" data-filter="kernels-desc">Kernels (High to Low)</div>
+                    <div class="filter-option" data-filter="alpha-asc">Alphabetical (A–Z)</div>
+                    <div class="filter-option" data-filter="alpha-desc">Alphabetical (Z–A)</div>
+                    <div class="filter-option" data-filter="newest">Newest First</div>
+                    <div class="filter-option" data-filter="oldest">Oldest First</div>
+                    <div class="filter-option" data-filter="active">Active Only</div>
+                    <div class="filter-option" data-filter="deactivated">Deactivated Only</div>
+                </div>
+            </div>
         </div>
 
         <div class="users-table">
@@ -154,6 +166,18 @@
 
     <script>
         let currentAdminId = null;
+        let allUsers = [];
+        let currentFilter = 'kernels-desc';
+
+        const filterLabels = {
+            'kernels-desc': 'Kernels',
+            'alpha-asc': 'A–Z',
+            'alpha-desc': 'Z–A',
+            'newest': 'Newest',
+            'oldest': 'Oldest',
+            'active': 'Active',
+            'deactivated': 'Deactivated'
+        };
 
         // Load and render users
         async function loadUsers() {
@@ -162,10 +186,62 @@
                 const res = await fetch('/api/admin/users');
                 const data = await res.json();
                 currentAdminId = data.admin_user_id;
-                list.innerHTML = '';
-                data.users.forEach(u => list.appendChild(buildRow(u)));
+                allUsers = data.users;
+                applyFilterAndRender();
             } catch (err) {
                 list.innerHTML = '<div class="loading-msg">Failed to load users.</div>';
+            }
+        }
+
+        function applyFilterAndRender() {
+            let users = [...allUsers];
+
+            // Status filters
+            if (currentFilter === 'active') {
+                users = users.filter(u => u.active_yn !== 0);
+            } else if (currentFilter === 'deactivated') {
+                users = users.filter(u => u.active_yn === 0);
+            }
+
+            // Sorting
+            switch (currentFilter) {
+                case 'kernels-desc':
+                    users.sort((a, b) => (b.popcorn_kernels || 0) - (a.popcorn_kernels || 0));
+                    break;
+                case 'alpha-asc':
+                    users.sort((a, b) => a.username.localeCompare(b.username));
+                    break;
+                case 'alpha-desc':
+                    users.sort((a, b) => b.username.localeCompare(a.username));
+                    break;
+                case 'newest':
+                    users.sort((a, b) => b.user_id - a.user_id);
+                    break;
+                case 'oldest':
+                    users.sort((a, b) => a.user_id - b.user_id);
+                    break;
+                case 'active':
+                case 'deactivated':
+                    users.sort((a, b) => (b.popcorn_kernels || 0) - (a.popcorn_kernels || 0));
+                    break;
+            }
+
+            const list = document.getElementById('users-list');
+            list.innerHTML = '';
+            if (users.length === 0) {
+                list.innerHTML = '<div class="loading-msg">No users match this filter.</div>';
+            } else {
+                users.forEach(u => list.appendChild(buildRow(u)));
+            }
+
+            // Re-apply search filter if there's text
+            const q = document.getElementById('user-search').value.toLowerCase().trim();
+            if (q) {
+                document.querySelectorAll('#users-list .user-row').forEach(row => {
+                    const username = row.querySelector('.user-username').textContent.toLowerCase();
+                    const display = row.querySelector('.user-display').textContent.toLowerCase();
+                    row.style.display = (username.includes(q) || display.includes(q)) ? '' : 'none';
+                });
             }
         }
 
@@ -465,6 +541,41 @@
                 const username = row.querySelector('.user-username').textContent.toLowerCase();
                 const display = row.querySelector('.user-display').textContent.toLowerCase();
                 row.style.display = (!q || username.includes(q) || display.includes(q)) ? '' : 'none';
+            });
+        });
+
+        // Filter dropdown
+        const filterBtn = document.getElementById('filter-btn');
+        const filterDropdown = document.getElementById('filter-dropdown');
+
+        filterBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterDropdown.classList.toggle('active');
+            filterBtn.classList.toggle('active');
+        });
+
+        document.addEventListener('click', () => {
+            filterDropdown.classList.remove('active');
+            filterBtn.classList.remove('active');
+        });
+
+        filterDropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        document.querySelectorAll('.filter-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const filter = option.dataset.filter;
+                currentFilter = filter;
+
+                document.querySelectorAll('.filter-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+
+                filterBtn.textContent = 'SORT: ' + filterLabels[filter];
+                filterDropdown.classList.remove('active');
+                filterBtn.classList.remove('active');
+
+                applyFilterAndRender();
             });
         });
 
