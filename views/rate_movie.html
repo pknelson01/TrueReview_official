@@ -234,17 +234,6 @@
         ratingInput.value = rounded;
     });
 
-    // Update dashboard tab with username
-    async function updateDashboardTab() {
-        try {
-            const res = await fetch("/api/user/username");
-            const data = await res.json();
-            document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
-        } catch (err) {
-            console.error("Error loading username:", err);
-        }
-    }
-    updateDashboardTab();
 
     // Check if movie is already in watchlist and update button accordingly
     let isInWatchlist = false;

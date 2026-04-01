@@ -170,17 +170,6 @@
     <script>
         // watchedId is already declared in update_movie.js
 
-        // Update dashboard tab with username
-        async function updateDashboardTab() {
-            try {
-                const res = await fetch("/api/user/username");
-                const data = await res.json();
-                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
-            } catch (err) {
-                console.error("Error loading username:", err);
-            }
-        }
-        updateDashboardTab();
 
         // Custom modal function
         function showConfirmModal() {

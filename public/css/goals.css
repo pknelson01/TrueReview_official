@@ -541,7 +541,9 @@
 
         .goal-card {
             background: var(--charcoal);
-            border-left: 3px solid var(--white);
+            border-left: 3px solid var(--accent);
+            border-top: 3px solid transparent;
+            border-right: 3px solid transparent;
             padding: 0;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -551,10 +553,18 @@
 
         .goal-card:hover {
             border-left-color: var(--accent);
+            border-top-color: var(--accent);
+            border-right-color: var(--accent);
+        }
+
+        .goal-card.complete {
+            border-left-color: #27ae60;
         }
 
         .goal-card.complete:hover {
             border-left-color: #27ae60;
+            border-top-color: #27ae60;
+            border-right-color: #27ae60;
         }
 
         .goal-card-top {
@@ -998,6 +1008,26 @@
             .goals-grid {
                 grid-template-columns: 1fr;
                 gap: 12px;
+            }
+
+            .goal-card {
+                border-left-color: var(--accent);
+                border-top-color: transparent;
+                border-right-color: transparent;
+            }
+
+            .goal-card.complete {
+                border-left-color: #27ae60;
+            }
+
+            .goal-card:hover {
+                border-top-color: transparent;
+                border-right-color: transparent;
+            }
+
+            .goal-card.complete:hover {
+                border-top-color: transparent;
+                border-right-color: transparent;
             }
 
             .goal-card-delete {

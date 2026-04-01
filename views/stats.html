@@ -164,17 +164,6 @@
             });
         }
 
-        // Update dashboard tab with display_name
-        async function updateDashboardTab() {
-            try {
-                const res = await fetch("/api/user/username");
-                const data = await res.json();
-                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
-            } catch (err) {
-                console.error("Error loading display name:", err);
-            }
-        }
-        updateDashboardTab();
 
         function getType(nameKey) {
             if (nameKey === 'actor') return 'actor';

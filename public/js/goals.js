@@ -12,19 +12,6 @@ if (hamburgerBtn) {
     });
 }
 
-// Update dashboard tab with display_name
-async function updateDashboardTab() {
-    try {
-        const res = await fetch("/api/user/username");
-        const data = await res.json();
-        document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
-        const mobileDashTab = document.getElementById("mobile-dashboard-tab");
-        if (mobileDashTab) mobileDashTab.textContent = data.display_name;
-    } catch (err) {
-        console.error("Error loading display name:", err);
-    }
-}
-updateDashboardTab();
 
 // ============================================================
 // STATE

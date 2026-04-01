@@ -399,16 +399,6 @@
             }
         }
 
-        // Header tab
-        async function updateDashboardTab() {
-            try {
-                const res = await fetch('/api/user/username');
-                const data = await res.json();
-                document.getElementById('dashboard-tab').textContent = data.display_name.toUpperCase();
-                const mob = document.getElementById('mobile-dashboard-tab');
-                if (mob) mob.textContent = data.display_name.toUpperCase();
-            } catch (err) {}
-        }
 
         // Hamburger
         const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -477,7 +467,6 @@
         });
 
         loadProfile().then(() => loadWatchedList());
-        updateDashboardTab();
     </script>
     <script src="/public/js/movie_modal.js"></script>
     <script>

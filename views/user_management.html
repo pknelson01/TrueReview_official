@@ -25,7 +25,6 @@
         <a href="/watched">Watched</a>
         <a href="/watchlist">Watchlist</a>
         <a href="/add-movie">Search</a>
-        <a href="/admin/user-management" style="color:#f5c518;">Admin Panel</a>
         <a href="/stats">Stats</a>
         <a href="/goals">Goals</a>
         <form action="/logout" method="POST" style="margin:0;">
@@ -581,16 +580,6 @@
 
         loadUsers();
 
-        async function updateDashboardTab() {
-            try {
-                const res = await fetch("/api/user/username");
-                const data = await res.json();
-                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
-                const mob = document.getElementById("mobile-dashboard-tab");
-                if (mob) mob.textContent = data.display_name.toUpperCase();
-            } catch (err) {}
-        }
-        updateDashboardTab();
 
         const hamburgerBtn = document.getElementById('hamburger-btn');
         const mobileMenu = document.getElementById('mobile-menu');
@@ -607,5 +596,6 @@
             });
         }
     </script>
+    <script src="/public/js/admin-button.js"></script>
 </body>
 </html>

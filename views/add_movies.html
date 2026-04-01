@@ -103,18 +103,6 @@
 
     <script src="/public/js/add_movies.js"></script>
     <script>
-        // Update dashboard tab with display_name
-        async function updateDashboardTab() {
-            try {
-                const res = await fetch("/api/user/username");
-                const data = await res.json();
-                const displayName = data.display_name || data.username;
-                document.getElementById("dashboard-tab").textContent = displayName.toUpperCase();
-            } catch (err) {
-                console.error("Error loading display name:", err);
-            }
-        }
-        updateDashboardTab();
     </script>
     <script>
         // Hamburger menu toggle

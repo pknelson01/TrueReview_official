@@ -121,24 +121,6 @@
 
     <script src="/public/js/watched.js"></script>
     <script>
-        // Update dashboard tab with display_name
-        async function updateDashboardTab() {
-            try {
-                const res = await fetch("/api/user/username");
-                const data = await res.json();
-                document.getElementById("dashboard-tab").textContent = data.display_name.toUpperCase();
-            } catch (err) {
-                console.error("Error loading display name:", err);
-            }
-        }
-        updateDashboardTab();
-
-        // Clear sessionStorage on logout
-        document.querySelector('form[action="/logout"]').addEventListener('submit', () => {
-            sessionStorage.clear();
-        });
-    </script>
-    <script>
         // Hamburger menu toggle
         const hamburgerBtn = document.getElementById('hamburger-btn');
         const mobileMenu = document.getElementById('mobile-menu');
