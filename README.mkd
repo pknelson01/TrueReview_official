@@ -63,6 +63,8 @@ Security      Rate limiting · parameterized queries · bcrypt hashing
 
 ## Local Development
 
+> **Before you begin:** This project requires API keys and credentials that you'll need to obtain yourself. You will need a **TMDB API key** (free at [themoviedb.org](https://www.themoviedb.org/settings/api)) for movie data, and if you want password reset emails to work, credentials for an **SMTP email service** (e.g. Gmail app password, SendGrid, Mailgun, etc.). These keys are not included in the repo — you'll plug them into your `.env` file in Step 3 below.
+
 ### Prerequisites
 
 - **Node.js** v24+ and **npm** 11+
