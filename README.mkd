@@ -63,23 +63,60 @@ Security      Rate limiting · parameterized queries · bcrypt hashing
 
 ## Local Development
 
-> **Prerequisites:** Node.js v24+ and npm 11+
+### Prerequisites
+
+- **Node.js** v24+ and **npm** 11+
+- **PostgreSQL** installed and running
+- A free **[TMDB API key](https://www.themoviedb.org/settings/api)**
+
+### 1. Clone & Install
 
 ```bash
-# Clone the repo
 git clone https://github.com/your-username/TrueReview.git
 cd TrueReview
-
-# Install dependencies
 npm install
+```
 
-# Start the server
+### 2. Set Up the Database
+
+Create a PostgreSQL database, then run the schema file to build the tables:
+
+```bash
+psql -U your_user -d your_database -f TrueReview_ops/db_structure/postgresql_db_structure.sql
+```
+
+### 3. Configure Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+# Database
+DATABASE_URL=postgresql://your_user:your_password@localhost:5432/your_database
+
+# Session
+SESSION_SECRET=any-random-secret-string
+
+# TMDB
+TMDB_API_KEY=your_tmdb_api_key
+
+# Email (for password resets — optional for local dev)
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_USER=you@example.com
+EMAIL_PASS=your_email_password
+EMAIL_FROM=you@example.com
+
+# App
+APP_URL=http://localhost:3000
+```
+
+### 4. Run
+
+```bash
 npm start
 ```
 
-Then open **http://localhost:3000** in your browser.
-
-> **Note:** You will need to configure environment variables for PostgreSQL, TMDB API key, and email service credentials. See `.env.example` if available.
+Open **http://localhost:3000** and create an account.
 
 ---
 
