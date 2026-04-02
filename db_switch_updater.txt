@@ -1,0 +1,129 @@
+DB SWITCH UPDATER — HOW IT WORKS
+=================================
+
+OVERVIEW
+--------
+When a user adds a movie to their account (via rating, watchlist, or custom goal),
+TrueReview does not blindly trust what is already stored in the local database. Instead,
+it runs a check against what the TMDb API search returned and decides whether the stored
+record is still valid or needs to be updated. This is called the DB Switch Updater and
+it lives in the `ensureMovieInDatabase` function in server.js.
+
+
+THE PROBLEM IT SOLVES
+----------------------
+TMDb (The Movie Database) occasionally reuses movie IDs. This means a numeric ID that
+previously pointed to one film (e.g. "Judy") can later be reassigned to a completely
+different film (e.g. "Digger"). If TrueReview has "Judy" stored under that ID and a user
+searches for and adds "Digger", the app would display "Judy" with the wrong poster because
+it found the ID already in the database and stopped looking.
+
+There is also a simpler case: a movie may have been stored in the past with a null poster
+(because it had no poster on TMDb at the time), and should be updated now that it has one.
+
+
+HOW THE FLOW WORKS
+-------------------
+1. USER SEARCHES
+   The user types a movie title into the search box (e.g. in the custom goals modal).
+   The frontend calls /api/search-movies which queries TMDb directly and returns live
+   results including the movie title, TMDb movie ID, and poster URL. This result is
+   displayed to the user and is always fresh from TMDb.
+
+2. USER ADDS THE MOVIE
+   When the user clicks ADD on a search result, the frontend sends a POST request to
+   /api/goals/:goal_id/movies with:
+     - movie_id: the TMDb numeric ID
+     - movie_title: the title shown in the search result (e.g. "Digger")
+
+3. DATABASE CHECK (ensureMovieInDatabase)
+   Before inserting the movie into the goal, the server calls ensureMovieInDatabase
+   with the movie_id and the expected title from the search result. This function:
+
+   a) Queries the all_movies table for a row matching that movie_id.
+
+   b) If the movie is NOT in the database:
+      - Fetches full movie details from TMDb (title, runtime, rating, genres, poster, etc.)
+      - Inserts a new row into all_movies.
+
+   c) If the movie IS in the database AND already has a poster:
+      - Calls titlesDifferSignificantly() to compare the stored title against the
+        title the user searched for.
+      - If the titles are close enough (see Title Comparison below): skips the TMDb
+        fetch entirely — the record is considered valid.
+      - If the titles differ significantly: treats the record as stale or a reused ID,
+        re-fetches from TMDb, and overwrites the row using an upsert.
+
+   d) If the movie IS in the database but has NO poster:
+      - Always re-fetches from TMDb to fill in the missing poster.
+
+4. UPSERT
+   When a TMDb fetch does happen, the data is written using an INSERT ... ON CONFLICT DO
+   UPDATE statement. This means if the row exists it gets fully overwritten with the
+   latest data from TMDb — title, poster, runtime, MPAA rating, genres, overview,
+   release date, and language. Nothing from the old stale record is kept.
+
+
+TITLE COMPARISON — titlesDifferSignificantly()
+-----------------------------------------------
+This function decides whether two movie titles are different enough to warrant a
+database update. It uses Jaccard similarity, which works as follows:
+
+  1. Both titles are normalized: lowercased and stripped of punctuation.
+  2. Each title is split into individual words.
+  3. The word overlap between the two titles is measured:
+       - Intersection: words that appear in both titles.
+       - Union: all unique words across both titles.
+  4. Jaccard similarity = intersection size / union size.
+     This gives a number between 0 (nothing in common) and 1 (identical).
+  5. If similarity is below 0.5 (less than 50% word overlap), the titles are
+     considered significantly different and a re-fetch is triggered.
+
+  Examples:
+    "Judy" vs "Digger"          → 0/2 = 0.0 similarity → DIFFERENT → re-fetch
+    "The Dark Knight" vs
+    "The Dark Knight Rises"     → 3/4 = 0.75 similarity → SAME → skip
+    "Spider-Man" vs
+    "Spider-Man: No Way Home"   → 1/4 = 0.25 similarity → DIFFERENT → re-fetch
+
+
+ID REUSE DETECTION
+-------------------
+After an upsert, the function also checks whether what happened was specifically a
+TMDb ID reuse scenario (versus a simple title update). It flags ID reuse if:
+  - A row already existed with a different title, AND
+  - The release years of the old and new movie are more than 1 year apart.
+
+This distinction is logged to the console for debugging purposes but does not
+change the behavior — the upsert happens either way.
+
+
+WHERE THIS IS TRIGGERED
+------------------------
+ensureMovieInDatabase is called in several places across server.js whenever a movie
+needs to be guaranteed present in the local database before being linked to a user record:
+  - Adding a movie to a custom goal  (POST /api/goals/:goal_id/movies)
+  - Rating/logging a watched movie
+  - Adding a movie to the watchlist
+
+The title comparison check (and therefore the stale data detection) only applies when
+an expectedTitle is passed in. Currently the custom goal flow passes the title from the
+search result. Other flows call ensureMovieInDatabase without a title, meaning they
+only trigger a re-fetch if the movie is missing or has no poster.
+
+
+DATABASE TABLE
+--------------
+Table: all_movies
+Columns updated by this system:
+  - movie_id          (TMDb numeric ID, primary key)
+  - movie_title
+  - movie_runtime
+  - mpaa_rating       (US MPAA certification, e.g. PG-13)
+  - movie_language    (original language code, e.g. "en")
+  - movie_release_date
+  - poster_path       (relative TMDb path, e.g. /abc123.jpg)
+  - poster_full_url   (full URL, e.g. https://image.tmdb.org/t/p/w500/abc123.jpg)
+  - adult_01          (1 if adult content, 0 otherwise)
+  - movie_overview    (plot summary)
+  - genre_01 through genre_10 (TMDb genre IDs, up to 10)

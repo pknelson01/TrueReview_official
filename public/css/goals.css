@@ -248,6 +248,41 @@
             color: var(--charcoal);
         }
 
+        .add-goal-btn.maxed {
+            border-color: #c0392b;
+            color: var(--white);
+            background: rgba(192, 57, 43, 0.2);
+            cursor: default;
+        }
+
+        .add-goal-btn.maxed:hover {
+            border-color: #c0392b;
+            color: var(--white);
+            background: rgba(192, 57, 43, 0.2);
+        }
+
+        .goals-header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .goal-count {
+            font-family: 'Anonymous Pro', monospace;
+            font-size: 18px;
+            color: var(--steel);
+            letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+        .goal-count.goal-count-warning {
+            color: #f1c40f;
+        }
+
+        .goal-count.goal-count-maxed {
+            color: #c0392b;
+        }
+
         .goals-loading {
             font-family: 'Anonymous Pro', monospace;
             font-size: 14px;
@@ -535,7 +570,7 @@
            ============================================================ */
         .goals-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 18px;
         }
 
@@ -658,6 +693,94 @@
 
         .goal-progress-fill.complete {
             background: #27ae60;
+        }
+
+        /* ============================================================
+           GOAL DETAIL MODAL
+           ============================================================ */
+        /* ============================================================
+           CONFIRM DELETE GOAL MODAL
+           ============================================================ */
+        .confirm-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 9000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .confirm-overlay.active {
+            display: flex;
+        }
+
+        .confirm-box {
+            background: var(--charcoal);
+            border: 3px solid var(--white);
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .confirm-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--white);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--white);
+            padding-bottom: 15px;
+        }
+
+        .confirm-message {
+            font-family: 'Anonymous Pro', monospace;
+            font-size: 16px;
+            color: var(--off-white);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .confirm-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .confirm-btn {
+            font-family: 'Oswald', sans-serif;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 15px;
+            border: 2px solid var(--white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .confirm-btn-yes {
+            background: var(--white);
+            color: var(--charcoal);
+        }
+
+        .confirm-btn-yes:hover {
+            background: transparent;
+            color: var(--white);
+        }
+
+        .confirm-btn-no {
+            background: transparent;
+            color: var(--white);
+        }
+
+        .confirm-btn-no:hover {
+            background: var(--white);
+            color: var(--charcoal);
         }
 
         /* ============================================================

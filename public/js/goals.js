@@ -61,6 +61,7 @@ const modalSearchResults = document.getElementById('modal-search-results');
 // ADD GOAL PANEL TOGGLE
 // ============================================================
 addGoalBtn.addEventListener('click', () => {
+    if (addGoalBtn.classList.contains('maxed')) return;
     const isOpen = addGoalPanel.style.display !== 'none';
     addGoalPanel.style.display = isOpen ? 'none' : 'block';
     if (!isOpen) {
@@ -172,12 +173,13 @@ async function runSearch(q) {
         const res = await fetch(`/api/goals/search?q=${encodeURIComponent(q)}&type=${type}`);
         const results = await res.json();
 
-        // Filter by department for person searches
+        // Filter by department for person searches.
+        // For directors, don't filter strictly by known_for_department — many prolific
+        // directors (e.g. Greta Gerwig) are classified as "Acting" on TMDb because
+        // they started as actors. Anyone showing up in a director search is fair game.
         let filtered = results;
         if (currentSearchType === 'actor') {
             filtered = results.filter(r => r.department === 'Acting');
-        } else if (currentSearchType === 'director') {
-            filtered = results.filter(r => r.department === 'Directing');
         }
 
         if (filtered.length === 0) {
@@ -267,7 +269,7 @@ async function addGoal(btn) {
                 btn.classList.add('added');
             } else if (data.error === 'Maximum of 10 goals reached') {
                 btn.textContent = 'LIMIT';
-                alert('You can have a maximum of 10 goals.');
+                alert('You can have a maximum of 12 goals.');
             } else {
                 btn.textContent = 'ADD';
                 btn.disabled = false;
@@ -289,6 +291,20 @@ async function loadGoals() {
         existingGoals = await res.json();
 
         goalsLoading.style.display = 'none';
+
+        // Update goal counter and button state
+        const goalCountEl = document.getElementById('goal-count');
+        const count = existingGoals.length;
+        const atLimit = count >= 12;
+        if (goalCountEl) {
+            goalCountEl.textContent = `${count}/12`;
+            goalCountEl.classList.toggle('goal-count-warning', count >= 10 && count < 12);
+            goalCountEl.classList.toggle('goal-count-maxed', atLimit);
+        }
+        addGoalBtn.classList.toggle('maxed', atLimit);
+        addGoalBtn.innerHTML = atLimit
+            ? 'MAXED OUT'
+            : '<i class="fas fa-plus"></i> ADD GOAL';
 
         if (existingGoals.length === 0) {
             goalsEmpty.style.display = 'block';
@@ -364,8 +380,40 @@ async function loadGoals() {
 // ============================================================
 // DELETE GOAL
 // ============================================================
+function showGoalConfirmModal() {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('goal-confirm-modal');
+        const yesBtn = document.getElementById('goal-confirm-yes');
+        const noBtn = document.getElementById('goal-confirm-no');
+
+        overlay.classList.add('active');
+
+        const handleYes = () => {
+            overlay.classList.remove('active');
+            yesBtn.removeEventListener('click', handleYes);
+            noBtn.removeEventListener('click', handleNo);
+            resolve(true);
+        };
+
+        const handleNo = () => {
+            overlay.classList.remove('active');
+            yesBtn.removeEventListener('click', handleYes);
+            noBtn.removeEventListener('click', handleNo);
+            resolve(false);
+        };
+
+        yesBtn.addEventListener('click', handleYes);
+        noBtn.addEventListener('click', handleNo);
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) handleNo();
+        });
+    });
+}
+
 async function deleteGoal(goalId) {
-    if (!confirm('Remove this goal?')) return;
+    const confirmed = await showGoalConfirmModal();
+    if (!confirmed) return;
 
     try {
         await fetch(`/api/goals/${goalId}`, { method: 'DELETE' });
@@ -627,7 +675,7 @@ async function runModalMovieSearch(q) {
                     <div class="search-result-name">${m.movie_title}</div>
                     <div class="search-result-detail">${m.releaseYear || ''}</div>
                 </div>
-                <button class="search-result-add" data-movie-id="${m.movie_id}">ADD</button>
+                <button class="search-result-add" data-movie-id="${m.movie_id}" data-movie-title="${m.movie_title}">ADD</button>
             </div>
         `).join('');
 
@@ -635,13 +683,14 @@ async function runModalMovieSearch(q) {
             btn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const movieId = btn.dataset.movieId;
+                const movieTitle = btn.dataset.movieTitle;
                 btn.textContent = '...';
                 btn.disabled = true;
                 try {
                     const addRes = await fetch(`/api/goals/${currentModalGoalId}/movies`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ movie_id: movieId }),
+                        body: JSON.stringify({ movie_id: movieId, movie_title: movieTitle }),
                     });
                     if (addRes.ok) {
                         btn.textContent = 'ADDED';

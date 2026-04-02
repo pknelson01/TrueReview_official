@@ -296,23 +296,28 @@ function titlesDifferSignificantly(title1, title2) {
   return similarity < 0.5;
 }
 
-async function ensureMovieInDatabase(movie_id) {
+async function ensureMovieInDatabase(movie_id, expectedTitle = null) {
   try {
     // Check if movie already exists
-    const checkSql = `SELECT movie_id, movie_title, movie_release_date FROM all_movies WHERE movie_id = $1`;
+    const checkSql = `SELECT movie_id, movie_title, movie_release_date, poster_full_url FROM all_movies WHERE movie_id = $1`;
     const existing = await db.query(checkSql, [movie_id]);
 
     const movieExists = existing.rows.length > 0;
     const oldTitle = movieExists ? existing.rows[0].movie_title : null;
     const oldReleaseDate = movieExists ? existing.rows[0].movie_release_date : null;
 
-    // If movie already exists in DB, skip TMDb fetch for speed
-    if (movieExists) {
-      console.log(`[MOVIE DB] Movie ${movie_id} already in database (${oldTitle}) — skipping TMDb fetch`);
-      return true;
+    // If movie exists with a poster, skip TMDb fetch — unless the title differs
+    // significantly from what the search returned (stale/reused TMDb ID)
+    if (movieExists && existing.rows[0].poster_full_url) {
+      const titleMismatch = expectedTitle && titlesDifferSignificantly(oldTitle, expectedTitle);
+      if (!titleMismatch) {
+        console.log(`[MOVIE DB] Movie ${movie_id} already in database (${oldTitle}) — skipping TMDb fetch`);
+        return true;
+      }
+      console.log(`[MOVIE DB] Title mismatch for ${movie_id}: stored="${oldTitle}" expected="${expectedTitle}" — re-fetching from TMDb`);
     }
 
-    console.log(`[MOVIE DB] Movie ${movie_id} not found, fetching from TMDB...`);
+    console.log(`[MOVIE DB] Movie ${movie_id} not found or stale, fetching from TMDB...`);
 
     // Fetch from TMDb only for new movies
     const movieUrl = `https://api.themoviedb.org/3/movie/${movie_id}?api_key=${TMDB_API_KEY}`;
@@ -2654,8 +2659,8 @@ app.post("/api/goals", requireLogin, async (req, res) => {
     const countResult = await db.query(
       "SELECT COUNT(*) FROM user_goals WHERE user_id = $1", [user_id]
     );
-    if (parseInt(countResult.rows[0].count) >= 10) {
-      return res.status(400).json({ error: "Maximum of 10 goals reached" });
+    if (parseInt(countResult.rows[0].count) >= 12) {
+      return res.status(400).json({ error: "Maximum of 12 goals reached" });
     }
 
     const result = await db.query(
@@ -2688,6 +2693,7 @@ app.delete("/api/goals/:goal_id", requireLogin, async (req, res) => {
       `DELETE FROM user_goals WHERE goal_id = $1 AND user_id = $2`,
       [goal_id, user_id]
     );
+    console.log(`[GOALS] Goal ${goal_id} deleted by user ${user_id}`);
     res.json({ success: true });
   } catch (error) {
     console.error("[GOALS DELETE]", error);
@@ -2699,7 +2705,7 @@ app.delete("/api/goals/:goal_id", requireLogin, async (req, res) => {
 app.post("/api/goals/:goal_id/movies", requireLogin, async (req, res) => {
   const user_id = req.session.user_id;
   const { goal_id } = req.params;
-  const { movie_id } = req.body;
+  const { movie_id, movie_title } = req.body;
 
   if (!movie_id) return res.status(400).json({ error: "movie_id is required" });
 
@@ -2713,8 +2719,8 @@ app.post("/api/goals/:goal_id/movies", requireLogin, async (req, res) => {
       return res.status(404).json({ error: "Custom goal not found" });
     }
 
-    // Ensure movie is in the database
-    await ensureMovieInDatabase(movie_id);
+    // Ensure movie is in the database (pass title to detect stale/reused TMDb IDs)
+    await ensureMovieInDatabase(movie_id, movie_title || null);
 
     const result = await db.query(
       `INSERT INTO custom_goal_movies (goal_id, movie_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *`,
