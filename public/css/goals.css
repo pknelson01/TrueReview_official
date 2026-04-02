@@ -636,6 +636,7 @@
             color: var(--white);
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            min-height: 51px; /* reserve 2 lines so all cards stay the same height */
         }
 
         .goal-card-type {
