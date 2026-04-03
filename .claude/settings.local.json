@@ -16,7 +16,8 @@
       "Bash(node -e \"console.log\\(require\\(''./node_modules/nsfwjs/package.json''\\).version\\)\")",
       "Bash(node -e \"console.log\\(require\\(''./node_modules/@tensorflow/tfjs-node/package.json''\\).version\\)\")",
       "Bash(node -e \"console.log\\(require\\(''./node_modules/@tensorflow/tfjs-core/package.json''\\).version\\)\")",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(npx patch-package:*)"
     ]
   }
 }
