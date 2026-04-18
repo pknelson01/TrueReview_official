@@ -239,10 +239,11 @@
 
 .mm-date-picker-hidden {
     position: absolute;
+    inset: 0;
     opacity: 0;
-    pointer-events: none;
-    width: 1px;
-    height: 1px;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
 }
 
 /* Action Buttons */

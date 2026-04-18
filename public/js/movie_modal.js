@@ -369,15 +369,8 @@
         ratingDisplay.textContent = parseFloat(e.target.value).toFixed(1);
     });
 
-    // Date button — showPicker() unsupported on iOS Safari; focus() opens
-    // the native date picker reliably on mobile.
-    dateBtn.addEventListener("click", () => {
-        try {
-            datePicker.showPicker();
-        } catch {
-            datePicker.focus();
-        }
-    });
+    // The date input is overlaid on top of the button (opacity: 0, full size),
+    // so taps hit the input directly — works natively on iOS Safari.
     datePicker.addEventListener("change", () => {
         if (datePicker.value) {
             const [y, m, d] = datePicker.value.split("-");
